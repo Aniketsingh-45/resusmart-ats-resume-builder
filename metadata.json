@@ -1,0 +1,5 @@
+{
+  "name": "ResuSmart: ATS Resume Builder",
+  "description": "An ATS-optimized resume builder with a Certificate Intelligence Engine for role-based suggestions and gap analysis.",
+  "requestFramePermissions": []
+}

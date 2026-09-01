@@ -21,7 +21,7 @@ import {
 export const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "resusmart-ats-app",
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:425413852108:web:e63925b766f06d34c7bb69",
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBhyMx3aW8eL5Wx25x7myQuHfRLCmrth38",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "enter you api",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "resusmart-ats-app.firebaseapp.com",
   firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || "(default)",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "resusmart-ats-app.firebasestorage.app",

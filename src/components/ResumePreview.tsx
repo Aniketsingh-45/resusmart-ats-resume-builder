@@ -1,32 +1,13 @@
 import React from 'react';
 import { ResumeContent, ResumeSettings } from '../types';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../utils/cn';
+import { normalizeUrl, displayUrl } from '../utils/url';
 
 interface ResumePreviewProps {
   content: ResumeContent;
   templateType: string;
   settings?: ResumeSettings;
 }
-
-// 🔗 Link Normalizer: Ensures external URLs have https:// so clicking in preview or PDF navigates properly
-const normalizeUrl = (url?: string): string => {
-  if (!url) return '';
-  const trimmed = url.trim();
-  if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed) || /^mailto:/i.test(trimmed) || /^tel:/i.test(trimmed)) return trimmed;
-  return `https://${trimmed}`;
-};
-
-// ✂️ Display URL Helper: Cleans URL for compact visual presentation (e.g. "linkedin.com/in/user")
-const displayUrl = (url?: string): string => {
-  if (!url) return '';
-  return url.trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
-};
 
 export function ResumePreview({ content, templateType, settings }: ResumePreviewProps) {
   const { 

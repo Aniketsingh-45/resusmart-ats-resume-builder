@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, email, displayName, subscriptionTier, createdAt
+    //
+    // Collection: resumes
+    // Fields: userId, title, templateType, content, atsScore, version, updatedAt
+    //
+    // Collection: certificates
+    // Fields: name, provider, industryTags, url, trendingScore, roi
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.subscriptionTier == 'admin' ||
+        (request.auth.token.email == "aniketsingh071845@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'subscriptionTier']) &&
+             data.uid is string && data.email is string &&
+             data.subscriptionTier in ['free', 'pro', 'enterprise'];
+    }
+
+    function isValidResume(data) {
+      return data.keys().hasAll(['userId', 'content', 'templateType']) &&
+             data.userId == request.auth.uid &&
+             data.content is map &&
+             data.templateType is string;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.subscriptionTier == resource.data.subscriptionTier;
+    }
+
+    match /resumes/{resumeId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidResume(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidResume(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /certificates/{certId} {
+      allow read: if true; // Publicly readable for recommendations
+      allow write: if isAdmin();
+    }
+  }
+}

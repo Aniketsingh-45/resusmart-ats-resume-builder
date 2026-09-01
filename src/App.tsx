@@ -7,7 +7,7 @@ import { ResumeEditor } from './components/ResumeEditor';
 import { CertificateEngine } from './components/CertificateEngine';
 import { LogIn, Loader2, Sparkles, CheckCircle2, Mail, Lock, UserPlus, Eye, EyeOff, AlertTriangle, ExternalLink, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import firebaseConfig from '../firebase-config.json';
+import { firebaseConfig } from './config/firebase';
 
 const FIREBASE_PROJECT_ID = firebaseConfig.projectId || 'resusmart-ats-app';
 const FIREBASE_CONSOLE_AUTH_URL = `https://console.firebase.google.com/project/${FIREBASE_PROJECT_ID}/authentication/settings`;

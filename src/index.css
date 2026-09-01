@@ -1,0 +1,411 @@
+/* ✅ @import rules MUST come first — before any other CSS */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Outfit:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Source+Sans+Pro:wght@400;600;700&family=Playfair+Display:wght@400;700&family=Merriweather:wght@400;700&display=swap');
+@import "tailwindcss";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100vw;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-50: #f0f7ff;
+  --color-brand-100: #e0effe;
+  --color-brand-200: #bae0fd;
+  --color-brand-300: #7cc8fb;
+  --color-brand-400: #38abf7;
+  --color-brand-500: #0e91e9;
+  --color-brand-600: #0273c7;
+  --color-brand-700: #035ba1;
+  --color-brand-800: #074d84;
+  --color-brand-900: #0c416e;
+  --color-brand-950: #082949;
+
+  --color-vibrant-pink: #f72585;
+  --color-vibrant-purple: #7209b7;
+  --color-vibrant-orange: #ff6b35;
+  --color-vibrant-blue: #4361ee;
+  --color-vibrant-teal: #4cc9f0;
+
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+
+  --color-indigo-50: #eef2ff;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+  --color-indigo-700: #4338ca;
+
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-500: #ec4899;
+  --color-pink-600: #db2777;
+  --color-pink-700: #be185d;
+
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-500: #a855f7;
+  --color-purple-600: #9333ea;
+  --color-purple-700: #7e22ce;
+
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #b45309;
+
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+  --color-rose-700: #be123c;
+
+  --color-sky-50: #f0f9ff;
+  --color-sky-100: #e0f2fe;
+  --color-sky-500: #0ea5e9;
+  --color-sky-600: #0284c7;
+  --color-sky-700: #0369a1;
+
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-ring: rgba(14, 145, 233, 0.5);
+  --color-outline: rgba(14, 145, 233, 0.5);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased overflow-x-hidden;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+
+  button, a {
+    @apply transition-all duration-300 ease-in-out;
+    outline: none;
+  }
+  
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+    @apply ring-2 ring-vibrant-pink ring-offset-2 ring-offset-slate-50;
+  }
+}
+
+.bg-vibrant-mesh {
+  background-color: #0f172a;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(255, 107, 53, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 0%, rgba(114, 9, 183, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(247, 37, 133, 0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(67, 97, 238, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(76, 201, 240, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(255, 107, 53, 0.15) 0px, transparent 50%);
+}
+
+.colorful-bg {
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.glass {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0 !important;
+  }
+
+  /* ── Nuke every scrollbar in the PDF ── */
+
+  /* 1. Webkit (Chrome, Edge, Brave, Safari) — removes the scrollbar track/thumb entirely */
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-corner {
+    display: none !important;
+    background: transparent !important;
+  }
+
+  /* 2. Firefox — hides the scrollbar gutter */
+  * {
+    scrollbar-width: none !important;
+  }
+
+  /* 3. html/body — no scroll gutter on the page itself */
+  html, body {
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 297mm !important;
+    overflow: hidden !important;   /* prevents the page-level scroll gutter from printing */
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    scrollbar-width: none !important;
+  }
+
+  /* Hide UI elements, but NEVER hide the modal wrappers containing the resume */
+  header, nav, aside, footer, #mobile-nav, .sticky, button,
+  .lg\:hidden.fixed.bottom-6 {
+    display: none !important;
+  }
+
+  /* Make modal wrappers and overlays static and invisible, but KEEP their children visible */
+  .fixed.inset-0, 
+  .fixed.inset-0.bg-slate-900\/95, 
+  .fixed.inset-0.z-\[100\],
+  .fixed.inset-0.z-\[150\] {
+    position: static !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide the modal's dark header/controls explicitly */
+  .fixed.inset-0 > div:first-child,
+  .backdrop-blur-md > div:first-child {
+    display: none !important;
+  }
+
+
+
+  #root, main, [role="main"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* 🔥 CORE FIX — Resume now grows to 2+ pages */
+  #resume-preview-container,
+  .resume-preview-container {
+    position: relative !important;
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 297mm !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    display: block !important;
+  }
+
+  #resume-preview-content {
+    height: auto !important;
+    min-height: 297mm !important;
+    max-height: none !important;
+    overflow: visible !important;
+    zoom: 1 !important;           /* Changed from 0.96 — no more edge cutting */
+    transform-origin: top center !important;
+    transform: none !important;
+  }
+
+  /* Template roots must grow */
+  #resume-preview-content > div {
+    height: auto !important;
+    min-height: 297mm !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+
+  /* Safe page breaks (prevents content chopping) */
+  section, .group, article, .experience-item, h2, h3, p, ul, li {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  h1, h2, h3 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Individual experience/project cards — always keep together */
+  [style*="break-inside: avoid"],
+  [style*="breakInside: avoid"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Flex-row template bodies: allow main column to spill to next page.
+     The sidebar stays pinned beside its own content but doesn't block flow. */
+  #resume-preview-content [style*="flex-direction: row"] {
+    flex-wrap: wrap !important;  /* fallback for very long content */
+  }
+  #resume-preview-content [style*="flex-direction: row"] > [style*="flex: 1"] {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+
+
+
+
+
+  /* Keep photos circular */
+  .rounded-full.overflow-hidden {
+    overflow: hidden !important;
+    height: auto !important;
+  }
+
+  /* 🚀 GLOBAL SPACING REFACOTR: Forces all inner layout margins to respect the design panel */
+  .spacing-compact section, 
+  .spacing-compact .space-y-4, 
+  .spacing-compact .space-y-6, 
+  .spacing-compact .space-y-8, 
+  .spacing-compact .space-y-10 {
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+  
+  .spacing-loose section, 
+  .spacing-loose .space-y-4, 
+  .spacing-loose .space-y-6, 
+  .spacing-loose .space-y-8, 
+  .spacing-loose .space-y-10 {
+    margin-top: 2.5rem !important;
+    margin-bottom: 2.5rem !important;
+    gap: 2rem !important;
+  }
+
+  /* Force scroll containers to be visible during print (needed for multi-page) */
+  .overflow-y-auto,
+  .overflow-auto {
+    overflow-y: visible !important;
+    height: auto !important;
+  }
+  .overflow-x-hidden {
+    overflow-x: hidden !important; /* keep horizontal clipping so nothing bleeds right */
+    overflow-y: visible !important;
+    height: auto !important;
+  }
+
+  /* Reveal hidden content wrappers (e.g. tab panels) */
+  .overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* ✅ EXCEPTION: Re-clip template headers that use absolute-positioned
+     decorative circles with negative margins — prevents right-side bleed in PDF.
+     The inline overflow:'hidden' style on these elements already wins, but this
+     rule acts as a safety net for browsers that strip inline print styles. */
+  #resume-preview-content .shrink-0.relative[style*="overflow: hidden"],
+  #resume-preview-content .shrink-0.relative[style*="overflow:hidden"] {
+    overflow: hidden !important;
+  }
+
+  /* 🔗 Interactive & Clean Links in Exported PDF */
+  a, a:visited {
+    text-decoration: none;
+  }
+  a[href]:after {
+    content: "" !important;
+  }
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Import success toast animation */
+@keyframes bounce-in {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  60%  { opacity: 1; transform: translateX(-50%) translateY(4px) scale(1.02); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Animate gradient background */
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}

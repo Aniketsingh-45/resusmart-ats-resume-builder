@@ -138,9 +138,9 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 1. MODERN PROFESSIONAL TEMPLATE
   // ==========================================
   const renderModern = () => (
-    <div className={cn('flex flex-row bg-white text-slate-900 overflow-x-hidden min-h-full items-stretch', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('flex flex-row bg-white text-slate-900 w-full min-h-full items-stretch break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
       {/* Left Sidebar */}
-      <div className="w-1/3 bg-slate-900 text-white p-6 space-y-6 shrink-0 flex flex-col justify-between">
+      <div className="w-1/3 bg-slate-900 text-white p-6 space-y-6 shrink-0 flex flex-col">
         <div className="space-y-6">
           <div className="space-y-3">
             <h1 className="text-3xl font-black leading-tight tracking-tight">{personalInfo.fullName}</h1>
@@ -149,23 +149,23 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
             )}
             <div className="space-y-2 text-slate-300 text-xs pt-1">
               {personalInfo.email && (
-                <a href={`mailto:${personalInfo.email}`} className="block truncate hover:underline hover:text-white transition-colors" title={personalInfo.email}>
+                <a href={`mailto:${personalInfo.email}`} className="block break-all hover:underline hover:text-white transition-colors" title={personalInfo.email}>
                   ✉️ {personalInfo.email}
                 </a>
               )}
               {personalInfo.phone && (
-                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block truncate hover:underline hover:text-white transition-colors">
+                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block break-all hover:underline hover:text-white transition-colors">
                   📱 {personalInfo.phone}
                 </a>
               )}
-              {personalInfo.location && <p className="truncate">📍 {personalInfo.location}</p>}
+              {personalInfo.location && <p className="break-words">📍 {personalInfo.location}</p>}
               {personalInfo.linkedin && (
-                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block truncate hover:underline hover:text-white transition-colors font-medium">
+                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline hover:text-white transition-colors font-medium">
                   🔗 {displayUrl(personalInfo.linkedin)}
                 </a>
               )}
               {personalInfo.website && (
-                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block truncate hover:underline hover:text-white transition-colors font-medium">
+                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline hover:text-white transition-colors font-medium">
                   🌐 {displayUrl(personalInfo.website)}
                 </a>
               )}
@@ -297,7 +297,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 2. CLASSIC CHRONOLOGICAL TEMPLATE
   // ==========================================
   const renderClassic = () => (
-    <div className={cn('bg-white text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="text-center space-y-2 border-b-2 border-slate-900 pb-5 mb-6" style={{ breakInside: 'avoid' }}>
         <h1 className="text-4xl font-bold uppercase tracking-tight">{personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (
@@ -305,13 +305,13 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         )}
         <div className="flex justify-center flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-slate-600 pt-2">
           {personalInfo.email && (
-            <a href={`mailto:${personalInfo.email}`} className="hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={`mailto:${personalInfo.email}`} className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               {personalInfo.email}
             </a>
           )}
           {personalInfo.email && personalInfo.phone && <span>•</span>}
           {personalInfo.phone && (
-            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="hover:underline">
+            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="break-all hover:underline">
               {personalInfo.phone}
             </a>
           )}
@@ -319,7 +319,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.linkedin && (
             <>
               <span>•</span>
-              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline font-semibold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
                 LinkedIn
               </a>
             </>
@@ -327,7 +327,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.website && (
             <>
               <span>•</span>
-              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="hover:underline font-semibold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
                 {displayUrl(personalInfo.website)}
               </a>
             </>
@@ -441,7 +441,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 3. STUDENT / ENTRY-LEVEL TEMPLATE
   // ==========================================
   const renderStudent = () => (
-    <div className={cn('bg-white text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="flex flex-wrap justify-between items-start border-b-4 pb-4 gap-4" style={{ borderColor: primaryColor, breakInside: 'avoid' }}>
         <div className="space-y-1 flex-1 min-w-[220px]">
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">{personalInfo.fullName}</h1>
@@ -451,23 +451,23 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         </div>
         <div className="text-right text-xs font-medium text-slate-600 space-y-1 shrink-0">
           {personalInfo.email && (
-            <a href={`mailto:${personalInfo.email}`} className="block hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={`mailto:${personalInfo.email}`} className="block break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               ✉️ {personalInfo.email}
             </a>
           )}
           {personalInfo.phone && (
-            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block hover:underline">
+            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block break-all hover:underline">
               📱 {personalInfo.phone}
             </a>
           )}
-          {personalInfo.location && <p>📍 {personalInfo.location}</p>}
+          {personalInfo.location && <p className="break-words">📍 {personalInfo.location}</p>}
           {personalInfo.linkedin && (
-            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               🔗 {displayUrl(personalInfo.linkedin)}
             </a>
           )}
           {personalInfo.website && (
-            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               🌐 {displayUrl(personalInfo.website)}
             </a>
           )}
@@ -475,7 +475,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '28px', marginTop: '20px', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '28px', marginTop: '20px', boxSizing: 'border-box', width: '100%' }}>
         {/* Main Student Column (Education FIRST) */}
         <div style={{ flex: '1 1 0', minWidth: 0 }}>
           {education.length > 0 && (
@@ -604,7 +604,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 4. CREATIVE VIBRANT TEMPLATE
   // ==========================================
   const renderCreative = () => (
-    <div className={cn('bg-white text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="px-8 py-7 text-white relative shrink-0" style={{ backgroundColor: primaryColor, overflow: 'hidden' }}>
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full -mr-32 -mt-32" style={{ backgroundColor: 'rgba(255, 255, 255, 0.12)' }} />
         <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full -ml-24 -mb-24" style={{ backgroundColor: 'rgba(0, 0, 0, 0.12)' }} />
@@ -618,23 +618,23 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
             </div>
             <div className="text-right text-xs space-y-1 opacity-95 shrink-0 font-medium">
               {personalInfo.email && (
-                <a href={`mailto:${personalInfo.email}`} className="block hover:underline">
+                <a href={`mailto:${personalInfo.email}`} className="block break-all hover:underline">
                   ✉️ {personalInfo.email}
                 </a>
               )}
               {personalInfo.phone && (
-                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block hover:underline">
+                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="block break-all hover:underline">
                   📱 {personalInfo.phone}
                 </a>
               )}
-              {personalInfo.location && <p>📍 {personalInfo.location}</p>}
+              {personalInfo.location && <p className="break-words">📍 {personalInfo.location}</p>}
               {personalInfo.linkedin && (
-                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-bold">
+                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-bold">
                   🔗 {displayUrl(personalInfo.linkedin)}
                 </a>
               )}
               {personalInfo.website && (
-                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-bold">
+                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-bold">
                   🌐 {displayUrl(personalInfo.website)}
                 </a>
               )}
@@ -645,7 +645,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       </div>
 
       {/* Creative Body */}
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Main column */}
         <div style={{ flex: '1 1 0', minWidth: 0, padding: '24px 20px 28px 28px' }}>
           {summary && (
@@ -771,7 +771,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 5. EXECUTIVE MINIMAL TEMPLATE
   // ==========================================
   const renderExecutive = () => (
-    <div className={cn('bg-white text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="flex flex-wrap justify-between items-start border-b-2 border-slate-900 pb-5 mb-6 gap-4" style={{ breakInside: 'avoid' }}>
         <div className="space-y-1 flex-1 min-w-[220px]">
           <h1 className="text-3xl font-light tracking-tight">{personalInfo.fullName}</h1>
@@ -781,23 +781,23 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         </div>
         <div className="text-right text-xs space-y-0.5 shrink-0">
           {personalInfo.email && (
-            <a href={`mailto:${personalInfo.email}`} className="font-semibold block hover:underline" style={{ color: primaryColor }}>
+            <a href={`mailto:${personalInfo.email}`} className="font-semibold block break-all hover:underline" style={{ color: primaryColor }}>
               {personalInfo.email}
             </a>
           )}
           {personalInfo.phone && (
-            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="text-slate-600 block hover:underline">
+            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="text-slate-600 block break-all hover:underline">
               {personalInfo.phone}
             </a>
           )}
-          {personalInfo.location && <p className="text-slate-600">{personalInfo.location}</p>}
+          {personalInfo.location && <p className="text-slate-600 break-words">{personalInfo.location}</p>}
           {personalInfo.linkedin && (
-            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               LinkedIn ↗
             </a>
           )}
           {personalInfo.website && (
-            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="block break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               {displayUrl(personalInfo.website)} ↗
             </a>
           )}
@@ -872,7 +872,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       )}
 
       {/* Skills, Education, Certifications flex row */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', breakInside: 'avoid' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', width: '100%' }}>
         {skills.length > 0 && (
           <div style={{ flex: '1 1 180px' }}>
             <h2 className="text-xs font-bold uppercase tracking-widest border-l-4 pl-2.5 mb-2" style={{ color: primaryColor, borderColor: primaryColor }}>Expertise</h2>
@@ -927,7 +927,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 6. MINIMALIST CLEAN TEMPLATE
   // ==========================================
   const renderMinimalist = () => (
-    <div className={cn('bg-white text-slate-800 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-800 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="border-b-2 border-slate-800 pb-4 mb-5" style={{ breakInside: 'avoid' }}>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">{personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (
@@ -935,13 +935,13 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         )}
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600 mt-2">
           {personalInfo.email && (
-            <a href={`mailto:${personalInfo.email}`} className="hover:underline font-semibold" style={{ color: primaryColor }}>
+            <a href={`mailto:${personalInfo.email}`} className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               {personalInfo.email}
             </a>
           )}
           {personalInfo.email && personalInfo.phone && <span className="text-slate-300">|</span>}
           {personalInfo.phone && (
-            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="hover:underline" style={{ color: primaryColor }}>
+            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="break-all hover:underline" style={{ color: primaryColor }}>
               {personalInfo.phone}
             </a>
           )}
@@ -949,7 +949,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.linkedin && (
             <>
               <span className="text-slate-300">|</span>
-              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline font-semibold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
                 LinkedIn
               </a>
             </>
@@ -957,7 +957,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.website && (
             <>
               <span className="text-slate-300">|</span>
-              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="hover:underline font-semibold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
                 {displayUrl(personalInfo.website)}
               </a>
             </>
@@ -1029,11 +1029,11 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       )}
 
       {education.length > 0 && (
-        <div className="mb-5" style={{ breakInside: 'avoid' }}>
+        <div className="mb-5">
           <h2 className="text-[10px] font-black uppercase tracking-[0.18em] border-b border-slate-200 pb-1 mb-2" style={{ color: primaryColor }}>Education</h2>
           <div className="space-y-2">
             {education.map((edu) => (
-              <div key={edu.id} className="flex flex-wrap justify-between items-baseline gap-2">
+              <div key={edu.id} className="flex flex-wrap justify-between items-baseline gap-2" style={{ breakInside: 'avoid' }}>
                 <div className="flex-1 min-w-[180px]">
                   <span className="font-bold text-xs text-slate-900">{edu.school}</span>
                   {edu.board && <span className="text-[10px] text-slate-400 ml-1">({edu.board})</span>}
@@ -1048,14 +1048,14 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       )}
 
       {skills.length > 0 && (
-        <div className="mb-5" style={{ breakInside: 'avoid' }}>
+        <div className="mb-5">
           <h2 className="text-[10px] font-black uppercase tracking-[0.18em] border-b border-slate-200 pb-1 mb-1.5" style={{ color: primaryColor }}>Skills</h2>
           <p className="text-xs leading-relaxed text-slate-700">{skills.join(' • ')}</p>
         </div>
       )}
 
       {certifications.length > 0 && (
-        <div className="mb-5" style={{ breakInside: 'avoid' }}>
+        <div className="mb-5">
           <h2 className="text-[10px] font-black uppercase tracking-[0.18em] border-b border-slate-200 pb-1 mb-1.5" style={{ color: primaryColor }}>Certifications</h2>
           <p className="text-xs leading-relaxed text-slate-700">{certifications.join(' • ')}</p>
         </div>
@@ -1069,7 +1069,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 7. TECH FOCUSED TEMPLATE
   // ==========================================
   const renderTech = () => (
-    <div className={cn('bg-slate-50 text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-slate-50 text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="bg-slate-900 p-6 rounded-2xl" style={{ color: primaryColor, breakInside: 'avoid' }}>
         <h1 className="text-2xl font-bold mb-0.5">&gt; {personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (
@@ -1079,7 +1079,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.email && (
             <p>
               EMAIL:{' '}
-              <a href={`mailto:${personalInfo.email}`} className="hover:underline font-bold" style={{ color: primaryColor }}>
+              <a href={`mailto:${personalInfo.email}`} className="break-all hover:underline font-bold" style={{ color: primaryColor }}>
                 {personalInfo.email}
               </a>
             </p>
@@ -1087,16 +1087,16 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.phone && (
             <p>
               PHONE:{' '}
-              <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="hover:underline">
+              <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="break-all hover:underline">
                 {personalInfo.phone}
               </a>
             </p>
           )}
-          {personalInfo.location && <p>LOC: {personalInfo.location}</p>}
+          {personalInfo.location && <p className="break-words">LOC: {personalInfo.location}</p>}
           {personalInfo.linkedin && (
             <p>
               LINKEDIN:{' '}
-              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="hover:underline font-bold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-bold" style={{ color: primaryColor }}>
                 {displayUrl(personalInfo.linkedin)}
               </a>
             </p>
@@ -1104,7 +1104,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           {personalInfo.website && (
             <p className="col-span-2">
               WEB:{' '}
-              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="hover:underline font-bold" style={{ color: primaryColor }}>
+              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-bold" style={{ color: primaryColor }}>
                 {displayUrl(personalInfo.website)}
               </a>
             </p>
@@ -1232,7 +1232,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 8. MODERN CREATIVE TEMPLATE
   // ==========================================
   const renderModernCreative = () => (
-    <div className={cn('bg-slate-50 text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-slate-50 text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="px-8 py-7 text-white relative shrink-0" style={{ backgroundColor: primaryColor, overflow: 'hidden' }}>
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full -mr-48 -mt-48" style={{ backgroundColor: 'rgba(255,255,255,0.12)' }} />
         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full -ml-32 -mb-32" style={{ backgroundColor: 'rgba(0,0,0,0.12)' }} />
@@ -1243,26 +1243,26 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
           </div>
           <div
             className="flex flex-col gap-1 text-xs font-semibold p-3 rounded-2xl border backdrop-blur-sm"
-            style={{ backgroundColor: 'rgba(0,0,0,0.22)', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.95)', maxWidth: '240px' }}
+            style={{ backgroundColor: 'rgba(0,0,0,0.22)', borderColor: 'rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.95)' }}
           >
             {personalInfo.email && (
-              <a href={`mailto:${personalInfo.email}`} className="truncate hover:underline">
+              <a href={`mailto:${personalInfo.email}`} className="break-all hover:underline">
                 ✉️ {personalInfo.email}
               </a>
             )}
             {personalInfo.phone && (
-              <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="truncate hover:underline">
+              <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="break-all hover:underline">
                 📱 {personalInfo.phone}
               </a>
             )}
-            {personalInfo.location && <p className="truncate">📍 {personalInfo.location}</p>}
+            {personalInfo.location && <p className="break-words">📍 {personalInfo.location}</p>}
             {personalInfo.linkedin && (
-              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline font-bold">
+              <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-bold">
                 🔗 {displayUrl(personalInfo.linkedin)}
               </a>
             )}
             {personalInfo.website && (
-              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="truncate hover:underline font-bold">
+              <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-bold">
                 🌐 {displayUrl(personalInfo.website)}
               </a>
             )}
@@ -1271,7 +1271,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         {renderIndianDetails(true)}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Main column */}
         <div style={{ flex: '1 1 0', minWidth: 0, padding: '24px 20px 28px 28px' }}>
           {summary && (
@@ -1410,9 +1410,9 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 9. MODERN PROFESSIONAL PHOTO TEMPLATE
   // ==========================================
   const renderModernPhoto = () => (
-    <div className={cn('flex flex-row bg-white text-slate-800 overflow-x-hidden min-h-full items-stretch', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('flex flex-row bg-white text-slate-800 w-full min-h-full items-stretch break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
       {/* Sidebar for photo and contact info */}
-      <div className="w-[280px] bg-slate-900 text-white p-8 flex flex-col gap-6 shrink-0 print:bg-slate-900">
+      <div className="w-[280px] bg-slate-900 text-white p-8 flex flex-col gap-6 shrink-0 print:bg-slate-900 overflow-visible">
         <div className="flex flex-col items-center text-center gap-3">
           <div className="w-36 h-36 rounded-full border-4 border-white/20 overflow-hidden bg-slate-800 shrink-0">
             {personalInfo.photo ? (
@@ -1436,23 +1436,23 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] border-b border-white/10 pb-1.5">Contact</h2>
             <div className="space-y-2 text-xs opacity-90 font-medium">
               {personalInfo.email && (
-                <a href={`mailto:${personalInfo.email}`} className="flex items-center gap-2 hover:underline truncate" title={personalInfo.email}>
+                <a href={`mailto:${personalInfo.email}`} className="flex items-center gap-2 hover:underline break-all" title={personalInfo.email}>
                   <span>✉️</span> {personalInfo.email}
                 </a>
               )}
               {personalInfo.phone && (
-                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="flex items-center gap-2 hover:underline truncate">
+                <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="flex items-center gap-2 hover:underline break-all">
                   <span>📱</span> {personalInfo.phone}
                 </a>
               )}
-              {personalInfo.location && <p className="flex items-center gap-2 truncate"><span>📍</span> {personalInfo.location}</p>}
+              {personalInfo.location && <p className="flex items-center gap-2 break-words"><span>📍</span> {personalInfo.location}</p>}
               {personalInfo.linkedin && (
-                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline truncate font-bold" style={{ color: primaryColor }}>
+                <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline break-all font-bold" style={{ color: primaryColor }}>
                   <span>🔗</span> {displayUrl(personalInfo.linkedin)}
                 </a>
               )}
               {personalInfo.website && (
-                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline truncate font-bold" style={{ color: primaryColor }}>
+                <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline break-all font-bold" style={{ color: primaryColor }}>
                   <span>🌐</span> {displayUrl(personalInfo.website)}
                 </a>
               )}
@@ -1509,7 +1509,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       </div>
 
       {/* Main Content Area */}
-      <div className={cn("flex-1 p-8 min-w-0", spacingClass)}>
+      <div className={cn("flex-1 p-8 min-w-0 break-words overflow-visible", spacingClass)}>
         {summary && (
           <div className="space-y-2" style={{ breakInside: 'avoid' }}>
             <h2 className="text-xs font-black uppercase tracking-widest border-b-2 pb-1 inline-block" style={{ color: primaryColor, borderColor: primaryColor }}>Profile Summary</h2>
@@ -1586,7 +1586,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 10. EXECUTIVE PRO TEMPLATE
   // ==========================================
   const renderExecutivePro = () => (
-    <div className={cn('bg-white text-slate-900 overflow-x-hidden min-h-full', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, minHeight: '297mm', boxSizing: 'border-box' }}>
       {/* Centred Header */}
       <div className="text-center px-10 pt-10 pb-6 border-b-4" style={{ borderColor: primaryColor, breakInside: 'avoid' }}>
         <h1 className="text-4xl font-black tracking-tight uppercase leading-none mb-2">{personalInfo.fullName}</h1>
@@ -1596,27 +1596,27 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         )}
         <div className="flex justify-center flex-wrap gap-x-5 gap-y-1 text-xs font-bold uppercase tracking-wider text-slate-500">
           {personalInfo.email && (
-            <a href={`mailto:${personalInfo.email}`} className="flex items-center gap-1 hover:underline">
+            <a href={`mailto:${personalInfo.email}`} className="flex items-center gap-1 break-all hover:underline">
               <span style={{ color: primaryColor }}>E:</span> {personalInfo.email}
             </a>
           )}
           {personalInfo.phone && (
-            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="flex items-center gap-1 hover:underline">
+            <a href={`tel:${personalInfo.phone.replace(/[\s()-]/g, '')}`} className="flex items-center gap-1 break-all hover:underline">
               <span style={{ color: primaryColor }}>M:</span> {personalInfo.phone}
             </a>
           )}
           {personalInfo.location && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 break-words">
               <span style={{ color: primaryColor }}>L:</span> {personalInfo.location}
             </div>
           )}
           {personalInfo.linkedin && (
-            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
+            <a href={normalizeUrl(personalInfo.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all hover:underline">
               <span style={{ color: primaryColor }}>IN:</span> LinkedIn ↗
             </a>
           )}
           {personalInfo.website && (
-            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
+            <a href={normalizeUrl(personalInfo.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 break-all hover:underline">
               <span style={{ color: primaryColor }}>W:</span> {displayUrl(personalInfo.website)} ↗
             </a>
           )}
@@ -1625,7 +1625,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       </div>
 
       {/* Main & Sidebar Layout */}
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Main column */}
         <div style={{ flex: '1 1 0', minWidth: 0, padding: '28px 20px 28px 36px' }}>
           {experience.length > 0 && (
@@ -1761,17 +1761,18 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   return (
     <div 
       id="resume-preview-container" 
-      className="mx-auto bg-white shadow-2xl shrink-0 print:shadow-none print:m-0 print:!overflow-visible"
+      className="mx-auto bg-white shadow-2xl shrink-0 print:shadow-none print:m-0 print:!overflow-visible print:!min-h-[297mm] print:!h-auto overflow-visible"
       style={{ 
         width: '210mm', 
-        minHeight: '297mm', /* Minimum 1 page banayega */
-        height: 'auto',     /* Content lamba hone par Page 2 automatic banayega */
-        position: 'relative'
+        minHeight: '297mm', /* Minimum 1 page */
+        height: 'auto',     /* Automatic multi-page expansion */
+        position: 'relative',
+        boxSizing: 'border-box'
       }}
     >
       <div 
         id="resume-preview-content" 
-        className="h-auto w-full print:!overflow-visible print:!h-auto"
+        className="h-auto w-full overflow-visible print:!overflow-visible print:!h-auto"
       >
         {templateType === 'modern-professional' && renderModern()}
         {templateType === 'classic-chronological' && renderClassic()}

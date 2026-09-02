@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
-import { LayoutDashboard, FileText, GraduationCap, LogOut, User, Sparkles, Menu, X } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { LayoutDashboard, FileText, GraduationCap, LogOut, User, Sparkles, Menu, X, ChevronRight } from 'lucide-react';
+import { cn } from '../utils/cn';
 import { motion, AnimatePresence } from 'framer-motion';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { useTheme } from '../context/ThemeContext';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,158 +15,212 @@ interface LayoutProps {
 }
 
 export function Layout({ children, profile, view, setView, onLogout }: LayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isDark } = useTheme();
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'editor', label: 'Resume Builder', icon: FileText },
-    { id: 'certificates', label: 'Cert Engine', icon: GraduationCap },
+    { id: 'dashboard',    label: 'Dashboard',   shortLabel: 'Home',  icon: LayoutDashboard, color: 'violet' },
+    { id: 'editor',       label: 'Resume Studio', shortLabel: 'Build', icon: FileText,        color: 'blue'   },
+    { id: 'certificates', label: 'Cert Engine', shortLabel: 'Certs', icon: GraduationCap,   color: 'emerald'},
   ] as const;
 
-  const SidebarContent = () => (
-    <>
-      <div className="p-8">
-        <div className="flex items-center gap-3 mb-1 group cursor-pointer">
-          <div className="w-12 h-12 bg-gradient-to-br from-brand-500 via-vibrant-purple to-vibrant-pink rounded-2xl flex items-center justify-center text-white shadow-xl shadow-brand-200 group-hover:rotate-12 transition-transform duration-300">
-            <Sparkles className="w-7 h-7 animate-pulse" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 bg-gradient-to-r from-brand-600 via-vibrant-purple to-vibrant-pink bg-clip-text text-transparent">ResuSmart</h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">by Aniket Singh</p>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex-1 px-4 space-y-2">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => {
-              setView(item.id);
-              setIsSidebarOpen(false);
-            }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200",
-              view === item.id 
-                ? "bg-brand-50 text-brand-700 shadow-sm" 
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-            )}
-          >
-            <item.icon className={cn("w-5 h-5", view === item.id ? "text-brand-600" : "text-slate-400")} />
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      <div className="p-6 border-t border-slate-100 space-y-4">
-        <div className="p-4 bg-slate-50 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-600 shadow-sm border border-slate-100">
-            <User className="w-5 h-5" />
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-bold text-slate-900 truncate">{profile?.displayName}</p>
-            <p className="text-[10px] font-bold text-brand-600 uppercase tracking-wider">{profile?.subscriptionTier} PLAN</p>
-          </div>
-        </div>
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-400 hover:text-red-500 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
-      </div>
-    </>
-  );
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans overflow-x-hidden">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shadow-sm z-20">
-        <SidebarContent />
-      </aside>
+    <div className={`min-h-screen flex flex-col font-sans overflow-x-hidden relative transition-colors duration-300 ${isDark ? 'bg-[#0b0f19] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* ── Top Navbar ── */}
+      <header
+        className="sticky top-0 z-50 h-14 flex items-center justify-between px-4 md:px-6 transition-colors duration-300"
+        style={{
+          background: isDark ? 'rgba(11,15,25,0.85)' : 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(24px) saturate(1.6)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.12)'}`,
+          boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.40)' : '0 4px 20px rgba(124,58,237,0.05)',
+        }}
+      >
+        {/* Brand */}
+        <button
+          onClick={() => setView('dashboard')}
+          className="flex items-center gap-2.5 group flex-shrink-0"
+        >
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg border border-white/20 group-hover:scale-110 transition-transform duration-300"
+            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #0ea5e9 100%)' }}>
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`text-base font-black tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>
+              ResuSmart
+            </span>
+            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-md text-[9px] font-bold font-mono"
+              style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.25)', color: '#7c3aed' }}>
+              v2.0
+            </span>
+          </div>
+        </button>
+
+        {/* Desktop Nav Pills */}
+        <nav className="hidden md:flex items-center gap-1 p-1 rounded-2xl"
+          style={{
+            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.90)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
+          }}>
+          {navItems.map((item) => {
+            const isActive = view === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
+                className={cn(
+                  'relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200',
+                  isActive
+                    ? 'text-white'
+                    : isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-black/5'
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-active-pill"
+                    className="absolute inset-0 rounded-xl shadow-md"
+                    style={{
+                      background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
+                      border: '1px solid rgba(255,255,255,0.18)'
+                    }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                  />
+                )}
+                <item.icon className={cn('w-4 h-4 relative z-10', isActive ? 'text-white' : '')} />
+                <span className="relative z-10">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right side */}
+        <div className="flex items-center gap-2.5">
+          {/* Theme Switcher Button */}
+          <ThemeToggle />
+
+          {/* ATS Online badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+            style={{
+              background: isDark ? 'rgba(16,185,129,0.12)' : 'rgba(16,185,129,0.10)',
+              border: `1px solid ${isDark ? 'rgba(16,185,129,0.25)' : 'rgba(16,185,129,0.30)'}`
+            }}>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-bold font-mono text-emerald-500 uppercase tracking-wider">ATS Online</span>
+          </div>
+
+          {/* User pill */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-default"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.90)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
+            }}>
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+              {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />}
+            </div>
+            <span className={`text-xs font-semibold max-w-[100px] truncate ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+              {profile?.displayName?.split(' ')[0] || 'User'}
+            </span>
+          </div>
+
+          {/* Logout */}
+          <button
+            onClick={onLogout}
+            className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:text-red-500 hover:bg-red-500/10 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}
+            style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}` }}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Logout</span>
+          </button>
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-all"
+            style={{
+              background: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(241,245,249,0.90)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}`
+            }}
+          >
+            {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </button>
+        </div>
+      </header>
+
+      {/* ── Mobile Dropdown Menu ── */}
       <AnimatePresence>
-        {isSidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] lg:hidden"
-            />
-            <motion.aside
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-[101] lg:hidden flex flex-col shadow-2xl"
-            >
-              <div className="absolute top-4 right-4">
-                <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-slate-400 hover:text-slate-900">
-                  <X className="w-6 h-6" />
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.18 }}
+            className="fixed top-14 inset-x-0 z-40 md:hidden px-4 pt-2 pb-4 shadow-2xl"
+            style={{
+              background: isDark ? 'rgba(11,15,25,0.97)' : 'rgba(255,255,255,0.97)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(124,58,237,0.15)'}`,
+            }}
+          >
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { setView(item.id); setIsMobileMenuOpen(false); }}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all',
+                      isActive
+                        ? 'text-white'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    )}
+                    style={isActive ? { background: 'rgba(124,58,237,0.20)', border: '1px solid rgba(124,58,237,0.30)' } : {}}
+                  >
+                    <item.icon className={cn('w-5 h-5', isActive ? 'text-violet-400' : '')} />
+                    <span>{item.label}</span>
+                    {isActive && <ChevronRight className="w-4 h-4 ml-auto text-violet-400" />}
+                  </button>
+                );
+              })}
+              <div className="pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <div className="flex items-center gap-3 px-4 py-2.5 mb-1">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>
+                    {profile?.displayName ? profile.displayName.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-white">{profile?.displayName || 'User'}</p>
+                    <p className="text-[10px] font-mono text-violet-400 uppercase tracking-wider">{profile?.subscriptionTier || 'PRO'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { onLogout(); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
                 </button>
               </div>
-              <SidebarContent />
-            </motion.aside>
-          </>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation - Removed in favor of top toggle as requested */}
-      {/* {view !== 'editor' && ( ... )} */}
-
-      {/* Main Content */}
-      <main className={cn(
-        "flex-1 flex flex-col overflow-hidden relative lg:pb-0",
-        "pb-0"
-      )}>
-        <header className="h-16 lg:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 z-[80] sticky top-0">
-          <div className="flex items-center gap-3 lg:gap-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-500 via-vibrant-purple to-vibrant-pink rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-200">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-sm lg:text-xl font-black text-slate-900 leading-none tracking-tight uppercase flex items-center gap-2">
-                ResuSmart
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-md text-[8px] font-black text-slate-400 uppercase tracking-widest">v2.0</span>
-              </h1>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[8px] lg:text-[10px] font-bold text-slate-400 uppercase tracking-widest">by</span>
-                <span className="text-[9px] lg:text-xs font-black bg-gradient-to-r from-vibrant-orange via-vibrant-pink to-vibrant-purple bg-clip-text text-transparent uppercase tracking-tight">Aniket singh</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              ATS Engine Active
-            </div>
-            
-            <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden w-11 h-11 rounded-2xl bg-slate-900 flex flex-col items-center justify-center gap-1 text-white active:scale-90 transition-all shadow-lg shadow-slate-200"
-            >
-              <div className="w-5 h-0.5 bg-white rounded-full" />
-              <div className="w-5 h-0.5 bg-white rounded-full" />
-              <div className="w-3 h-0.5 bg-white rounded-full self-start ml-3" />
-            </button>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="h-full"
-          >
-            {children}
-          </motion.div>
-        </div>
+      {/* ── Page Content ── */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="h-full"
+        >
+          {children}
+        </motion.div>
       </main>
     </div>
   );

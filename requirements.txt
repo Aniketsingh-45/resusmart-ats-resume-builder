@@ -1,0 +1,251 @@
+================================================================================
+RESUSMART ATS RESUME BUILDER — SYSTEM REQUIREMENTS & EXECUTION GUIDE
+================================================================================
+Platform: Node.js / React 19 / TypeScript 5.8 / Vite 6.2 / Express
+Compatible with: Windows, macOS, Linux, Android, iOS, Docker, and Cloud Containers
+================================================================================
+
+[1] NOTE ON PROJECT ARCHITECTURE
+--------------------------------------------------------------------------------
+ResuSmart is a TypeScript/JavaScript (Node.js) web application. In the JavaScript
+ecosystem, packages are managed via `package.json` (the Node equivalent of Python's
+`requirements.txt`).
+
+This file provides:
+  1. Complete system & hardware prerequisites
+  2. The full manifest of required packages & versions
+  3. Step-by-step execution commands for EVERY operating system and device
+  4. Mobile / LAN access instructions (open on phone/tablet over Wi-Fi)
+  5. Universal Docker execution for zero-configuration setup
+
+--------------------------------------------------------------------------------
+[2] HARDWARE & SYSTEM PREREQUISITES
+--------------------------------------------------------------------------------
+Minimum Hardware:
+  - Processor: 64-bit Dual-Core 1.5 GHz or higher (x86_64, ARM64, Apple Silicon)
+  - RAM: 2 GB minimum (4 GB recommended)
+  - Disk Space: 500 MB free disk space
+
+Supported Operating Systems:
+  - Windows: 10, 11, or Windows Server (PowerShell or CMD)
+  - macOS: 10.15 (Catalina) or newer (Intel & Apple Silicon M1/M2/M3/M4)
+  - Linux: Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux, CentOS/RHEL 8+
+  - Android: Via Termux (standalone) or via browser (LAN access)
+  - iOS/iPadOS: Via Safari/Chrome (LAN access to host machine)
+
+Required Runtimes & Tools:
+  - Node.js: v18.0.0 or higher (Recommended: Node.js v20.x or v22.x LTS)
+    Download: https://nodejs.org/
+  - Package Manager: npm (v9.0.0+), pnpm, or yarn (included with Node.js)
+  - Modern Web Browser: Google Chrome, Mozilla Firefox, Microsoft Edge, Safari, Brave
+
+--------------------------------------------------------------------------------
+[3] DEPENDENCIES MANIFEST (from package.json)
+--------------------------------------------------------------------------------
+Runtime Production Dependencies:
+  - @tailwindcss/vite          ^4.1.14   (Tailwind CSS v4 Vite compilation plugin)
+  - @vitejs/plugin-react       ^5.0.4    (React Fast Refresh and JSX support)
+  - clsx                       ^2.1.1    (Conditional utility for CSS classes)
+  - dotenv                     ^17.2.3   (Environment variable loader)
+  - express                    ^4.21.2   (Web server for local API and hosting)
+  - firebase                   ^12.10.0  (Authentication, Firestore, and Cloud storage)
+  - framer-motion              ^12.37.0  (Physics-based micro-animations and transitions)
+  - lucide-react               ^0.546.0  (Modern vector icon library)
+  - pdfjs-dist                 ^5.5.207  (Client-side PDF parsing and text extraction)
+  - react                      ^19.0.0   (Modern UI component framework)
+  - react-dom                  ^19.0.0   (DOM rendering engine for React)
+  - react-easy-crop            ^5.5.6    (Interactive photo cropping and rotation)
+  - tailwind-merge             ^3.5.0    (Merge Tailwind classes without conflicts)
+  - vite                       ^6.2.0    (Next-generation frontend dev server & bundler)
+
+Development & Tooling Dependencies:
+  - @types/express             ^4.17.21  (Type definitions for Express)
+  - @types/node                ^22.14.0  (Type definitions for Node.js)
+  - autoprefixer               ^10.4.21  (CSS vendor prefix postprocessor)
+  - tailwindcss                ^4.1.14   (Tailwind utility CSS framework)
+  - tsx                        ^4.21.0   (Execute TypeScript files directly in Node.js)
+  - typescript                 ~5.8.2    (TypeScript compiler & type checker)
+
+--------------------------------------------------------------------------------
+[4] ENVIRONMENT CONFIGURATION (.env)
+--------------------------------------------------------------------------------
+Before running, ensure an `.env` file exists in the project root directory.
+Create `.env` by copying `.env.example`:
+
+Windows (PowerShell):
+  Copy-Item .env.example .env
+
+Linux / macOS:
+  cp .env.example .env
+
+Key environment variables:
+  VITE_AI_API_KEY="your_openrouter_or_gemini_api_key"
+  VITE_AI_BASE_URL="https://openrouter.ai/api/v1"
+  VITE_AI_MODEL="openai/gpt-4o-mini"
+  GEMINI_API_KEY="your_gemini_api_key"
+  VITE_FIREBASE_API_KEY="your_firebase_api_key"
+  VITE_FIREBASE_AUTH_DOMAIN="your_project.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID="your_project_id"
+  VITE_FIREBASE_STORAGE_BUCKET="your_project.appspot.com"
+  VITE_FIREBASE_MESSAGING_SENDER_ID="your_sender_id"
+  VITE_FIREBASE_APP_ID="your_app_id"
+
+--------------------------------------------------------------------------------
+[5] EXECUTION INSTRUCTIONS BY DEVICE / OPERATING SYSTEM
+--------------------------------------------------------------------------------
+
+------------------------------------------------------------------
+DEVICE A: WINDOWS (Windows 10 / 11)
+------------------------------------------------------------------
+1. Open PowerShell or Command Prompt as Administrator (if installing Node).
+2. Install Node.js (if not already installed):
+     winget install OpenJS.NodeJS.LTS
+   or download the installer from https://nodejs.org/
+3. Verify installation:
+     node -v
+     npm -v
+4. Navigate to the project directory:
+     cd "path\to\resusmart_-ats-resume-builder"
+5. Install all required dependencies:
+     npm install
+6. Copy environment file (if not already done):
+     if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+7. Run the application:
+     npm run dev
+8. Open your browser and go to:
+     http://localhost:3000
+
+* Note: If PowerShell shows a script execution policy restriction, run:
+     Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+------------------------------------------------------------------
+DEVICE B: macOS (MacBook, iMac, Mac Mini — Intel & Apple Silicon)
+------------------------------------------------------------------
+1. Open Terminal.
+2. Install Node.js (using Homebrew or official installer):
+     brew install node
+   or download from https://nodejs.org/
+3. Verify installation:
+     node -v
+     npm -v
+4. Navigate to the project directory:
+     cd /path/to/resusmart_-ats-resume-builder
+5. Install dependencies:
+     npm install
+6. Create environment file:
+     cp -n .env.example .env
+7. Launch the application:
+     npm run dev
+8. Open your browser and navigate to:
+     http://localhost:3000
+
+------------------------------------------------------------------
+DEVICE C: LINUX (Ubuntu, Debian, Linux Mint, Fedora, Arch)
+------------------------------------------------------------------
+1. Open Terminal.
+2. Install Node.js (v20+ Recommended):
+   - Ubuntu / Debian:
+       curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+       sudo apt-get install -y nodejs
+   - Fedora / RHEL:
+       sudo dnf install nodejs
+   - Arch Linux:
+       sudo pacman -S nodejs npm
+3. Verify installation:
+     node -v
+     npm -v
+4. Navigate to project folder:
+     cd /path/to/resusmart_-ats-resume-builder
+5. Install dependencies:
+     npm install
+6. Setup .env:
+     cp -n .env.example .env
+7. Run development server:
+     npm run dev
+8. Open browser at:
+     http://localhost:3000
+
+------------------------------------------------------------------
+DEVICE D: MOBILE DEVICES (Android, iPhone, iPad over Local Wi-Fi)
+------------------------------------------------------------------
+ResuSmart is configured to bind to `0.0.0.0:3000`, allowing any device
+connected to the same Wi-Fi network to access the full app immediately.
+
+1. Start the server on your computer:
+     npm run dev
+2. Find your computer's local IP address:
+   - On Windows (PowerShell):
+       ipconfig
+       (Look for "IPv4 Address", e.g., 192.168.1.15)
+   - On Mac / Linux:
+       ip route get 1.1.1.1 | awk '{print $7}'
+       or
+       ifconfig
+3. On your mobile phone (Android / iPhone) connected to the same Wi-Fi:
+   - Open Chrome, Safari, or Brave.
+   - Type: http://<YOUR_COMPUTER_IP>:3000
+     Example: http://192.168.1.15:3000
+4. You can now build, edit, and preview resumes directly on your mobile device!
+
+------------------------------------------------------------------
+DEVICE E: ANDROID STANDALONE EXECUTION (via Termux)
+------------------------------------------------------------------
+To run the server natively on Android without a PC:
+1. Install Termux (from F-Droid: https://f-droid.org/packages/com.termux/).
+2. Open Termux and install git and nodejs:
+     pkg update && pkg upgrade -y
+     pkg install git nodejs -y
+3. Clone or copy your project repository:
+     git clone <your-repo-url>
+     cd resusmart_-ats-resume-builder
+4. Install dependencies:
+     npm install
+5. Copy .env:
+     cp .env.example .env
+6. Start the server:
+     npm run dev
+7. Open Chrome on your phone and browse to:
+     http://localhost:3000
+
+------------------------------------------------------------------
+DEVICE F: UNIVERSAL DOCKER EXECUTION (Runs on ANY Device with Docker)
+------------------------------------------------------------------
+If Docker is installed on your device (Windows, Mac, Linux, or Cloud VM):
+1. Build the Docker image:
+     docker build -t resusmart-app .
+2. Run the Docker container:
+     docker run -d -p 3000:3000 --name resusmart resusmart-app
+3. Access the application on any browser:
+     http://localhost:3000
+
+--------------------------------------------------------------------------------
+[6] COMMON COMMANDS CHEATSHEET
+--------------------------------------------------------------------------------
+Start dev server:          npm run dev
+Build for production:      npm run build
+Preview production build:  npm run preview
+Run TypeScript linter:     npm run lint
+Clean build artifacts:     npm run clean
+
+--------------------------------------------------------------------------------
+[7] TROUBLESHOOTING
+--------------------------------------------------------------------------------
+Issue: "Port 3000 is already in use" (EADDRINUSE)
+Solution:
+  - Windows: netstat -ano | findstr :3000
+             taskkill /PID <PID_NUMBER> /F
+  - Mac/Linux: lsof -ti:3000 | xargs kill -9
+  - Or edit `PORT = 3000` in `server.ts` to `PORT = 3001`
+
+Issue: "npm ERR! code ERESOLVE" during install
+Solution:
+  Run: npm install --legacy-peer-deps
+
+Issue: Firebase or AI API calls failing
+Solution:
+  Ensure valid API keys are placed in your `.env` file. If using AI features,
+  provide a valid GEMINI_API_KEY or VITE_AI_API_KEY.
+
+================================================================================
+END OF REQUIREMENTS & EXECUTION GUIDE
+================================================================================

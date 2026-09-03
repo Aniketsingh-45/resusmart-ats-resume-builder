@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" />
+      <stop offset="50%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+    <linearGradient id="docGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f8fafc" />
+    </linearGradient>
+    <linearGradient id="foldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.35" />
+    </filter>
+    <filter id="sparkleGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#38bdf8" flood-opacity="0.6" />
+    </filter>
+  </defs>
+  
+  <!-- Outer Rounded Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <rect x="8" y="8" width="496" height="496" rx="120" stroke="rgba(255,255,255,0.25)" stroke-width="8" fill="none" />
+
+  <!-- Document / Resume Shape with folded corner -->
+  <g filter="url(#glow)">
+    <path d="M 140 108 
+             L 304 108 
+             L 372 176 
+             L 372 408 
+             A 24 24 0 0 1 348 432 
+             L 164 432 
+             A 24 24 0 0 1 140 408 
+             Z" 
+          fill="url(#docGrad)" />
+    <!-- Folded corner flap -->
+    <path d="M 304 108 
+             L 304 164 
+             A 12 12 0 0 0 316 176 
+             L 372 176 
+             Z" 
+          fill="url(#foldGrad)" />
+  </g>
+
+  <!-- Resume Content Header Bar -->
+  <rect x="176" y="200" width="160" height="20" rx="10" fill="#4f46e5" />
+  
+  <!-- Resume Bullet Lines -->
+  <rect x="176" y="238" width="120" height="14" rx="7" fill="#64748b" />
+  <rect x="176" y="266" width="145" height="14" rx="7" fill="#94a3b8" />
+  <rect x="176" y="294" width="105" height="14" rx="7" fill="#cbd5e1" />
+
+  <!-- Interactive Badges / Skills Pills -->
+  <rect x="176" y="340" width="72" height="22" rx="11" fill="#7c3aed" opacity="0.9" />
+  <rect x="256" y="340" width="65" height="22" rx="11" fill="#0ea5e9" opacity="0.9" />
+
+  <!-- AI Sparkle Badge on top right -->
+  <g transform="translate(328, 92)" filter="url(#sparkleGlow)">
+    <circle cx="36" cy="36" r="44" fill="#0b0f19" stroke="rgba(255,255,255,0.2)" stroke-width="4" />
+    <circle cx="36" cy="36" r="38" fill="url(#bgGrad)" />
+    <!-- 4-point sparkle star -->
+    <path d="M 36 12 
+             Q 36 36 60 36 
+             Q 36 36 36 60 
+             Q 36 36 12 36 
+             Q 36 36 36 12 Z" 
+          fill="#ffffff" />
+    <circle cx="36" cy="36" r="5" fill="#fde047" />
+  </g>
+</svg>

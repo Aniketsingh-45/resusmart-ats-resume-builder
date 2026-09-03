@@ -471,26 +471,33 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
     }
   }, [resumeId]);
 
-  const handleAiGenerate = async () => {
-    if (!aiPrompt.trim()) return;
+  const handleAiGenerate = async (customPrompt?: string) => {
+    const promptToUse = (typeof customPrompt === 'string' ? customPrompt : aiPrompt).trim();
+    if (!promptToUse) return;
     setIsGenerating(true);
     try {
-      const generatedContent = await generateResumeContent(aiPrompt);
+      const generatedContent = await generateResumeContent(promptToUse);
       if (generatedContent && generatedContent.personalInfo) {
         setResume(prev => ({
           ...prev,
+          title: (!prev.title || prev.title === 'Untitled Resume')
+            ? `${generatedContent.personalInfo.fullName || promptToUse} - Resume`
+            : prev.title,
           content: {
-            ...prev.content,
+            ...INITIAL_CONTENT,
             ...generatedContent,
             declaration: generatedContent.declaration || prev.content?.declaration || ''
           }
         }));
+        setActiveSection('personal');
         setIsAiModalOpen(false);
         setAiPrompt('');
+        setImportSuccessMsg(`✨ AI Generated Resume for "${promptToUse}" loaded!`);
+        setTimeout(() => setImportSuccessMsg(null), 5000);
       }
     } catch (error) {
       console.error("AI Generation failed", error);
-      alert("AI Fail! Please check your Gemini API key limit or internet connection.");
+      alert("AI Generation encountered an issue. Please try again or select a preset.");
     } finally {
       setIsGenerating(false);
     }
@@ -2597,6 +2604,150 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                 <ResumePreview content={resume.content as ResumeContent} templateType={resume.templateType || 'modern-professional'} settings={resume.settings} />
               </motion.div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🪄 AI Auto-Fill & Resume Generator Modal */}
+      <AnimatePresence>
+        {isAiModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
+            onClick={(e) => e.target === e.currentTarget && !isGenerating && setIsAiModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className={`border rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+            >
+              {/* Header */}
+              <div className={`px-6 py-5 border-b flex items-center justify-between rounded-t-3xl shrink-0 ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg text-white"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 20px rgba(124,58,237,0.40)' }}>
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>
+                      AI Resume Studio & Auto-Fill
+                    </h3>
+                    <p className={`text-[11px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Synthesize a complete 100% ATS-optimized resume tailored to any role or industry.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !isGenerating && setIsAiModalOpen(false)}
+                  disabled={isGenerating}
+                  className={`p-2 rounded-xl transition-all disabled:opacity-40 ${isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                {/* Prompt input */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                      Target Role / Career Prompt
+                    </label>
+                    <span className="text-[10px] font-mono text-violet-500 font-bold">Step 1 — Describe your role</span>
+                  </div>
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="e.g. Senior Full Stack Engineer with 4 years experience in React, Node.js, AWS, and distributed microservices. Led sprint deliveries at a high-growth tech startup..."
+                    rows={3}
+                    className={`w-full rounded-2xl p-4 text-xs font-medium outline-none transition-all resize-none leading-relaxed border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-100 placeholder-slate-600 focus:border-violet-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-violet-500'}`}
+                  />
+                </div>
+
+                {/* 1-Click Role Presets */}
+                <div className="space-y-2">
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    ⚡ 1-Click Role Presets (Click to autofill prompt):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      { role: '🚀 Full Stack Engineer', desc: 'React, Node.js, TypeScript, PostgreSQL & Cloud microservices', prompt: 'Full Stack Engineer with 4+ years of experience in React, TypeScript, Node.js, PostgreSQL, and scalable AWS cloud architectures.' },
+                      { role: '🤖 AI / ML Engineer', desc: 'PyTorch, LLM agents, Python, LangChain & Vector Databases', prompt: 'Machine Learning & AI Engineer specializing in LLMs, PyTorch, Python, neural networks, and scalable model deployment.' },
+                      { role: '☁️ DevOps & Cloud Architect', desc: 'AWS, Kubernetes, Docker, Terraform & CI/CD automation', prompt: 'DevOps & Cloud Engineer with expertise in AWS infrastructure, Kubernetes orchestration, Docker, and zero-downtime CI/CD pipelines.' },
+                      { role: '📊 Data Scientist / Analyst', desc: 'Python, SQL, Tableau, Predictive modeling & BI', prompt: 'Data Scientist with deep proficiency in SQL, Python, machine learning pipelines, predictive analytics, and enterprise BI dashboards.' },
+                      { role: '🎨 UI/UX Product Designer', desc: 'Figma, Design Systems, User Research & Wireframing', prompt: 'Senior UI/UX Product Designer with expertise in Figma, design systems, interactive prototypes, and user research.' },
+                      { role: '📱 Mobile Engineer', desc: 'React Native, Flutter, Swift, iOS & Android', prompt: 'Mobile Application Developer with 3+ years experience building cross-platform React Native and Flutter mobile apps.' },
+                      { role: '🎓 Fresher / Graduate Developer', desc: 'Entry-level CS Graduate with solid DSA & Web Dev foundation', prompt: 'Entry-level Computer Science Graduate with strong foundations in Data Structures, Algorithms, React, JavaScript, and database management.' },
+                      { role: '💼 Technical Product Manager', desc: 'Agile sprints, PRDs, Roadmap strategy & User metrics', prompt: 'Technical Product Manager with experience driving product lifecycles, user-centric feature discovery, and cross-functional engineering teams.' }
+                    ].map((item, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setAiPrompt(item.prompt);
+                        }}
+                        className={`text-left p-3 rounded-xl border text-xs transition-all hover:scale-[1.01] group ${aiPrompt === item.prompt ? (isDark ? 'bg-violet-950/40 border-violet-500 text-white' : 'bg-violet-50 border-violet-400 text-violet-900') : (isDark ? 'bg-slate-950/60 border-slate-800 text-slate-300 hover:border-violet-500/50' : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-violet-400 shadow-xs')}`}
+                      >
+                        <p className="font-bold text-violet-500 text-xs mb-0.5 flex items-center justify-between">
+                          <span>{item.role}</span>
+                          <span className="text-[10px] opacity-0 group-hover:opacity-100 font-mono text-violet-400">Select →</span>
+                        </p>
+                        <p className={`text-[11px] line-clamp-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* What AI will generate note */}
+                <div className={`p-4 rounded-2xl border space-y-1.5 ${isDark ? 'bg-indigo-950/20 border-indigo-500/20' : 'bg-indigo-50/70 border-indigo-100'}`}>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-violet-500" />
+                    <p className={`text-xs font-bold ${isDark ? 'text-violet-300' : 'text-violet-900'}`}>
+                      What gets auto-generated:
+                    </p>
+                  </div>
+                  <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    • High-impact summary • 2+ quantified experience roles with STAR bullet points • Academic background • Standardized skill sets • 2 technical projects with highlights
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className={`px-6 py-4 border-t flex gap-3 shrink-0 rounded-b-3xl ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <button
+                  onClick={() => setIsAiModalOpen(false)}
+                  disabled={isGenerating}
+                  className={`px-5 py-3 rounded-2xl font-mono font-bold text-xs border transition-colors ${isDark ? 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleAiGenerate()}
+                  disabled={isGenerating || !aiPrompt.trim()}
+                  className="flex-1 py-3.5 px-6 rounded-2xl font-mono font-bold text-xs text-white flex items-center justify-center gap-2 transition-all shadow-lg hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:scale-100 border border-white/20"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #06b6d4 100%)',
+                    boxShadow: '0 4px 20px rgba(124,58,237,0.40)'
+                  }}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Synthesizing All Resume Sections…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Generate & Auto-Fill Entire Resume</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

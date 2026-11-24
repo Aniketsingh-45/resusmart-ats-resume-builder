@@ -56,8 +56,11 @@ export interface Project {
 export interface ResumeSettings {
   primaryColor?: string;
   fontFamily?: string;
-  fontSize?: 'small' | 'medium' | 'large';
-  spacing?: 'compact' | 'normal' | 'loose';
+  fontSize?: 'tiny' | 'small' | 'medium' | 'large';
+  spacing?: 'ultra-compact' | 'compact' | 'normal' | 'loose';
+  margins?: 'compact' | 'normal' | 'wide';
+  projectLayout?: 'single' | 'grid';
+  fitToOnePage?: boolean;
 }
 
 export interface ResumeContent {

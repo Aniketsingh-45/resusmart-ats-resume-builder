@@ -406,6 +406,53 @@ body[data-theme="bright"] .surface-grid {
     page-break-before: avoid !important;
   }
 
+  /* 2-Column Project Grid in Print Mode - Strict Flexbox Geometry */
+  .resume-projects-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    gap: 8px 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .resume-project-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 0 0 calc(50% - 5px) !important;
+    max-width: calc(50% - 5px) !important;
+    width: calc(50% - 5px) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    overflow: hidden !important;
+  }
+
+  .resume-project-card h3 {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .resume-project-card p {
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+
   /* Page break & fragmentation rules for clean multi-page resumes */
   .break-inside-avoid, 
   [data-break-inside-avoid="true"], 

@@ -368,35 +368,39 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         {projects.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-base font-bold uppercase tracking-wider text-slate-900 border-b-2 pb-1 inline-block" style={{ borderColor: primaryColor }}>Projects</h2>
-            <div className={spacingClass}>
-              {projects.map((project) => (
-                <div key={project.id} className={itemSpacingClass} style={{ breakInside: 'avoid' }}>
-                  <div className="flex flex-wrap justify-between items-start gap-2">
-                    <h3 className="font-bold text-slate-900 flex-1 min-w-[200px]">{project.name}</h3>
-                    {project.link && (
-                      <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0 flex items-center gap-1" style={{ color: primaryColor }}>
-                        {displayUrl(project.link)} ↗
-                      </a>
+            {isProjectGrid ? (
+              renderProjectGrid('modern')
+            ) : (
+              <div className={spacingClass}>
+                {projects.map((project) => (
+                  <div key={project.id} className={itemSpacingClass} style={{ breakInside: 'avoid' }}>
+                    <div className="flex flex-wrap justify-between items-start gap-2">
+                      <h3 className="font-bold text-slate-900 flex-1 min-w-[200px]">{project.name}</h3>
+                      {project.link && (
+                        <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0 flex items-center gap-1" style={{ color: primaryColor }}>
+                          {displayUrl(project.link)} ↗
+                        </a>
+                      )}
+                    </div>
+                    {project.description && <p className="text-slate-600 leading-relaxed">{project.description}</p>}
+                    {project.keyFeatures && project.keyFeatures.length > 0 && (
+                      <ul className="list-disc list-outside ml-4 space-y-1 mt-1">
+                        {project.keyFeatures.map((feature, i) => (
+                          <li key={i} className="text-slate-600 leading-relaxed">{feature}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {project.technologies.map((tech, i) => (
+                          <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">{tech}</span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {project.description && <p className="text-slate-600 leading-relaxed">{project.description}</p>}
-                  {project.keyFeatures && project.keyFeatures.length > 0 && (
-                    <ul className="list-disc list-outside ml-4 space-y-1 mt-1">
-                      {project.keyFeatures.map((feature, i) => (
-                        <li key={i} className="text-slate-600 leading-relaxed">{feature}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {project.technologies && project.technologies.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {project.technologies.map((tech, i) => (
-                        <span key={i} className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">{tech}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -409,13 +413,13 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 2. CLASSIC CHRONOLOGICAL TEMPLATE
   // ==========================================
   const renderClassic = () => (
-    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
-      <div className="text-center space-y-2 border-b-2 border-slate-900 pb-5 mb-6" style={{ breakInside: 'avoid' }}>
-        <h1 className="text-4xl font-bold uppercase tracking-tight">{personalInfo.fullName}</h1>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: pagePadding, minHeight: '297mm', boxSizing: 'border-box' }}>
+      <div className={cn("text-center border-b-2 border-slate-900", isCompactMode ? "pb-2.5 mb-2.5 space-y-0.5" : "pb-4 mb-5 space-y-1.5")} style={{ breakInside: 'avoid' }}>
+        <h1 className={cn("font-black uppercase tracking-tight", isCompactMode ? "text-2xl" : "text-3xl sm:text-4xl")}>{personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (
-          <h2 className="text-base font-semibold text-slate-600 uppercase tracking-widest mt-1" style={{ color: primaryColor }}>{personalInfo.jobTitle}</h2>
+          <h2 className={cn("font-bold uppercase tracking-widest", isCompactMode ? "text-[11px] mt-0.5" : "text-sm sm:text-base mt-1")} style={{ color: primaryColor }}>{personalInfo.jobTitle}</h2>
         )}
-        <div className="flex justify-center flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-slate-600 pt-2">
+        <div className={cn("flex justify-center flex-wrap gap-x-2.5 gap-y-0.5 text-slate-600", isCompactMode ? "text-[10.5px] pt-1" : "text-xs pt-1.5 font-medium")}>
           {personalInfo.email && (
             <a href={`mailto:${personalInfo.email}`} className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
               {personalInfo.email}
@@ -436,6 +440,14 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
               </a>
             </>
           )}
+          {personalInfo.github && (
+            <>
+              <span>•</span>
+              <a href={normalizeUrl(personalInfo.github)} target="_blank" rel="noopener noreferrer" className="break-all hover:underline font-semibold" style={{ color: primaryColor }}>
+                {displayUrl(personalInfo.github)}
+              </a>
+            </>
+          )}
           {personalInfo.website && (
             <>
               <span>•</span>
@@ -450,26 +462,29 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
 
       <div className={spacingClass}>
         {summary && (
-          <div className="space-y-1.5" style={{ breakInside: 'avoid' }}>
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Professional Summary</h2>
-            <p className="leading-relaxed text-slate-700">{summary}</p>
+          <div className={cn(itemSpacingClass)} style={{ breakInside: 'avoid' }}>
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>Professional Summary</h2>
+            <p className="leading-snug text-slate-700 text-justify">{summary}</p>
           </div>
         )}
 
         {experience.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Experience</h2>
+          <div className="space-y-2">
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>Experience</h2>
             <div className={itemSpacingClass}>
               {experience.map((exp) => (
-                <div key={exp.id} className="space-y-1" style={{ breakInside: 'avoid' }}>
-                  <div className="flex flex-wrap justify-between items-baseline gap-2">
-                    <h3 className="font-bold flex-1 min-w-[200px] text-slate-900">{exp.company}</h3>
-                    <span className="text-xs font-bold text-slate-500 shrink-0">{exp.startDate} — {exp.current ? 'Present' : exp.endDate}</span>
+                <div key={exp.id} className={itemSpacingClass} style={{ breakInside: 'avoid' }}>
+                  <div className="flex flex-wrap justify-between items-baseline gap-1">
+                    <div className="flex items-baseline gap-1.5 flex-1 min-w-[200px]">
+                      <h3 className="font-bold text-slate-900">{exp.company}</h3>
+                      <span className="text-slate-400 text-xs">|</span>
+                      <span className="font-semibold text-xs" style={{ color: primaryColor }}>{exp.position}</span>
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-500 shrink-0">{exp.startDate ? `${exp.startDate} — ` : ''}{exp.current ? 'Present' : exp.endDate}</span>
                   </div>
-                  <p className="font-bold text-xs" style={{ color: primaryColor }}>{exp.position}</p>
-                  <ul className="list-disc ml-5 space-y-1 text-slate-700">
+                  <ul className={cn("list-disc ml-4 text-slate-700", isCompactMode ? "space-y-0.5 mt-0.5" : "space-y-1 mt-1")}>
                     {(exp.description || []).map((bullet, i) => (
-                      <li key={i} className="leading-relaxed">{bullet}</li>
+                      <li key={i} className="leading-snug">{bullet}</li>
                     ))}
                   </ul>
                 </div>
@@ -479,18 +494,18 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         )}
 
         {education.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Education</h2>
+          <div className="space-y-1.5">
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>Education</h2>
             <div className={itemSpacingClass}>
               {education.map((edu) => (
-                <div key={edu.id} className="flex flex-wrap justify-between items-baseline gap-2" style={{ breakInside: 'avoid' }}>
+                <div key={edu.id} className="flex flex-wrap justify-between items-baseline gap-1" style={{ breakInside: 'avoid' }}>
                   <div className="flex-1 min-w-[200px]">
                     <span className="font-bold text-slate-900">{edu.school}</span>
                     {edu.board && <span className="text-xs text-slate-500 ml-1">({edu.board})</span>}
                     <span className="text-slate-600"> — {edu.degree}{edu.field ? ` in ${edu.field}` : ''}</span>
                     {edu.score && <span className="text-xs font-bold ml-2" style={{ color: primaryColor }}>Score: {edu.score}</span>}
                   </div>
-                  <span className="text-xs font-bold text-slate-500 shrink-0">{edu.graduationDate}</span>
+                  <span className="text-[11px] font-semibold text-slate-500 shrink-0">{edu.graduationDate}</span>
                 </div>
               ))}
             </div>
@@ -498,49 +513,55 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
         )}
 
         {skills.length > 0 && (
-          <div className="space-y-1.5" style={{ breakInside: 'avoid' }}>
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Skills</h2>
-            <p className="leading-relaxed text-slate-700">{skills.join(', ')}</p>
+          <div className="space-y-1">
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>Technical Skills</h2>
+            <p className="leading-snug text-slate-700">{skills.join(', ')}</p>
           </div>
         )}
 
         {certifications.length > 0 && (
-          <div className="space-y-1.5" style={{ breakInside: 'avoid' }}>
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Certifications</h2>
-            <p className="leading-relaxed text-slate-700">{certifications.join(', ')}</p>
+          <div className="space-y-1">
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>Certifications</h2>
+            <p className="leading-snug text-slate-700">{certifications.join(' • ')}</p>
           </div>
         )}
 
         {projects.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest border-b border-slate-300 pb-1" style={{ color: primaryColor }}>Projects</h2>
-            <div className={itemSpacingClass}>
-              {projects.map((project) => (
-                <div key={project.id} className="space-y-1" style={{ breakInside: 'avoid' }}>
-                  <div className="flex flex-wrap justify-between items-baseline gap-2">
-                    <h3 className="font-bold flex-1 min-w-[200px] text-slate-900">{project.name}</h3>
-                    {project.link && (
-                      <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
-                        {displayUrl(project.link)} ↗
-                      </a>
+          <div className="space-y-1.5">
+            <h2 className={cn("font-bold uppercase tracking-widest border-b pb-0.5", isCompactMode ? "text-[10.5px] mb-1" : "text-xs mb-1.5")} style={{ color: primaryColor, borderColor: `${primaryColor}40` }}>
+              Projects {projects.length > 0 && <span className="text-[10px] font-normal lowercase opacity-70">({projects.length} builds)</span>}
+            </h2>
+            {isProjectGrid ? (
+              renderProjectGrid('classic')
+            ) : (
+              <div className={itemSpacingClass}>
+                {projects.map((project) => (
+                  <div key={project.id} className="space-y-0.5" style={{ breakInside: 'avoid' }}>
+                    <div className="flex flex-wrap justify-between items-baseline gap-1">
+                      <h3 className="font-bold flex-1 min-w-[200px] text-slate-900">{project.name}</h3>
+                      {project.link && (
+                        <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold hover:underline shrink-0" style={{ color: primaryColor }}>
+                          {displayUrl(project.link)} ↗
+                        </a>
+                      )}
+                    </div>
+                    {project.description && <p className="leading-snug text-slate-700">{project.description}</p>}
+                    {project.keyFeatures && project.keyFeatures.length > 0 && (
+                      <ul className="list-disc ml-4 space-y-0.5 mt-0.5 text-slate-600">
+                        {project.keyFeatures.map((feature, i) => (
+                          <li key={i} className="leading-snug">{feature}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {project.technologies && project.technologies.length > 0 && (
+                      <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                        <span className="text-slate-400">Tech Stack:</span> {project.technologies.join(', ')}
+                      </p>
                     )}
                   </div>
-                  {project.description && <p className="leading-relaxed text-slate-700">{project.description}</p>}
-                  {project.keyFeatures && project.keyFeatures.length > 0 && (
-                    <ul className="list-disc ml-5 space-y-0.5 mt-1 text-slate-600">
-                      {project.keyFeatures.map((feature, i) => (
-                        <li key={i} className="leading-relaxed">{feature}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {project.technologies && project.technologies.length > 0 && (
-                    <p className="text-xs text-slate-500 font-semibold mt-1">
-                      <span className="text-slate-400">Tech Stack:</span> {project.technologies.join(', ')}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -553,7 +574,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 3. STUDENT / ENTRY-LEVEL TEMPLATE
   // ==========================================
   const renderStudent = () => (
-    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: pagePadding, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="flex flex-wrap justify-between items-start border-b-4 pb-4 gap-4" style={{ borderColor: primaryColor, breakInside: 'avoid' }}>
         <div className="space-y-1 flex-1 min-w-[220px]">
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">{personalInfo.fullName}</h1>
@@ -618,35 +639,39 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />
                 Projects & Builds
               </h2>
-              <div className={spacingClass}>
-                {projects.map((project) => (
-                  <div key={project.id} className="space-y-1.5" style={{ breakInside: 'avoid' }}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="font-bold text-slate-900 flex-1 min-w-[160px]">{project.name}</h3>
-                      {project.link && (
-                        <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
-                          {displayUrl(project.link)} ↗
-                        </a>
+              {isProjectGrid ? (
+                renderProjectGrid('classic')
+              ) : (
+                <div className={spacingClass}>
+                  {projects.map((project) => (
+                    <div key={project.id} className="space-y-1.5" style={{ breakInside: 'avoid' }}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="font-bold text-slate-900 flex-1 min-w-[160px]">{project.name}</h3>
+                        {project.link && (
+                          <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
+                            {displayUrl(project.link)} ↗
+                          </a>
+                        )}
+                      </div>
+                      {project.description && <p className="text-slate-600 leading-relaxed text-xs">{project.description}</p>}
+                      {project.keyFeatures && project.keyFeatures.length > 0 && (
+                        <ul className="list-disc list-inside text-slate-600 space-y-1 ml-1 text-xs">
+                          {project.keyFeatures.map((feature, i) => (
+                            <li key={i} className="leading-relaxed">{feature}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {project.technologies && project.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {project.technologies.map((tech, i) => (
+                            <span key={i} className="text-[9px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">{tech}</span>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    {project.description && <p className="text-slate-600 leading-relaxed text-xs">{project.description}</p>}
-                    {project.keyFeatures && project.keyFeatures.length > 0 && (
-                      <ul className="list-disc list-inside text-slate-600 space-y-1 ml-1 text-xs">
-                        {project.keyFeatures.map((feature, i) => (
-                          <li key={i} className="leading-relaxed">{feature}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {project.technologies && project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {project.technologies.map((tech, i) => (
-                          <span key={i} className="text-[9px] font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-600 border border-slate-200">{tech}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -883,7 +908,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 5. EXECUTIVE MINIMAL TEMPLATE
   // ==========================================
   const renderExecutive = () => (
-    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: pagePadding, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="flex flex-wrap justify-between items-start border-b-2 border-slate-900 pb-5 mb-6 gap-4" style={{ breakInside: 'avoid' }}>
         <div className="space-y-1 flex-1 min-w-[220px]">
           <h1 className="text-3xl font-light tracking-tight">{personalInfo.fullName}</h1>
@@ -951,35 +976,39 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       {projects.length > 0 && (
         <div className="mb-6">
           <h2 className="text-xs font-bold uppercase tracking-widest border-l-4 pl-2.5 mb-3" style={{ color: primaryColor, borderColor: primaryColor }}>Projects & Initiatives</h2>
-          <div className="space-y-3">
-            {projects.map(project => (
-              <div key={project.id} style={{ breakInside: 'avoid' }}>
-                <div className="flex flex-wrap justify-between items-baseline gap-2">
-                  <h3 className="text-sm font-bold flex-1 min-w-[200px] text-slate-900">{project.name}</h3>
-                  {project.link && (
-                    <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
-                      {displayUrl(project.link)} ↗
-                    </a>
+          {isProjectGrid ? (
+            renderProjectGrid('executive')
+          ) : (
+            <div className="space-y-3">
+              {projects.map(project => (
+                <div key={project.id} style={{ breakInside: 'avoid' }}>
+                  <div className="flex flex-wrap justify-between items-baseline gap-2">
+                    <h3 className="text-sm font-bold flex-1 min-w-[200px] text-slate-900">{project.name}</h3>
+                    {project.link && (
+                      <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-xs font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
+                        {displayUrl(project.link)} ↗
+                      </a>
+                    )}
+                  </div>
+                  {project.description && <p className="text-xs text-slate-700 leading-relaxed mt-0.5">{project.description}</p>}
+                  {project.keyFeatures && project.keyFeatures.length > 0 && (
+                    <ul className="space-y-0.5 mt-1">
+                      {project.keyFeatures.map((feature, i) => (
+                        <li key={i} className="text-xs text-slate-600 leading-relaxed flex gap-2">
+                          <span className="font-bold shrink-0" style={{ color: primaryColor }}>•</span>{feature}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                      Stack: {project.technologies.join(' • ')}
+                    </p>
                   )}
                 </div>
-                {project.description && <p className="text-xs text-slate-700 leading-relaxed mt-0.5">{project.description}</p>}
-                {project.keyFeatures && project.keyFeatures.length > 0 && (
-                  <ul className="space-y-0.5 mt-1">
-                    {project.keyFeatures.map((feature, i) => (
-                      <li key={i} className="text-xs text-slate-600 leading-relaxed flex gap-2">
-                        <span className="font-bold shrink-0" style={{ color: primaryColor }}>•</span>{feature}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {project.technologies && project.technologies.length > 0 && (
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-                    Stack: {project.technologies.join(' • ')}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1039,7 +1068,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 6. MINIMALIST CLEAN TEMPLATE
   // ==========================================
   const renderMinimalist = () => (
-    <div className={cn('bg-white text-slate-800 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: '36px 44px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-white text-slate-800 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass)} style={{ ...fontStyle, padding: pagePadding, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="border-b-2 border-slate-800 pb-4 mb-5" style={{ breakInside: 'avoid' }}>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">{personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (
@@ -1110,33 +1139,37 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
       {projects.length > 0 && (
         <div className="mb-5">
           <h2 className="text-[10px] font-black uppercase tracking-[0.18em] border-b border-slate-200 pb-1 mb-2.5" style={{ color: primaryColor }}>Projects</h2>
-          <div className="space-y-3">
-            {projects.map((project) => (
-              <div key={project.id} style={{ breakInside: 'avoid' }}>
-                <div className="flex flex-wrap justify-between items-baseline gap-2">
-                  <h3 className="font-bold text-slate-900 text-xs">{project.name}</h3>
-                  {project.link && (
-                    <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
-                      {displayUrl(project.link)} ↗
-                    </a>
+          {isProjectGrid ? (
+            renderProjectGrid('minimalist')
+          ) : (
+            <div className="space-y-3">
+              {projects.map((project) => (
+                <div key={project.id} style={{ breakInside: 'avoid' }}>
+                  <div className="flex flex-wrap justify-between items-baseline gap-2">
+                    <h3 className="font-bold text-slate-900 text-xs">{project.name}</h3>
+                    {project.link && (
+                      <a href={normalizeUrl(project.link)} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold hover:underline shrink-0" style={{ color: primaryColor }}>
+                        {displayUrl(project.link)} ↗
+                      </a>
+                    )}
+                  </div>
+                  {project.description && <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{project.description}</p>}
+                  {project.keyFeatures && project.keyFeatures.length > 0 && (
+                    <ul className="list-disc ml-4 space-y-0.5 mt-0.5">
+                      {project.keyFeatures.map((feature, i) => (
+                        <li key={i} className="text-xs text-slate-500 leading-relaxed">{feature}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
+                      Tools: {project.technologies.join(', ')}
+                    </p>
                   )}
                 </div>
-                {project.description && <p className="text-xs text-slate-600 leading-relaxed mt-0.5">{project.description}</p>}
-                {project.keyFeatures && project.keyFeatures.length > 0 && (
-                  <ul className="list-disc ml-4 space-y-0.5 mt-0.5">
-                    {project.keyFeatures.map((feature, i) => (
-                      <li key={i} className="text-xs text-slate-500 leading-relaxed">{feature}</li>
-                    ))}
-                  </ul>
-                )}
-                {project.technologies && project.technologies.length > 0 && (
-                  <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
-                    Tools: {project.technologies.join(', ')}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1181,7 +1214,7 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   // 7. TECH FOCUSED TEMPLATE
   // ==========================================
   const renderTech = () => (
-    <div className={cn('bg-slate-50 text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: '36px', minHeight: '297mm', boxSizing: 'border-box' }}>
+    <div className={cn('bg-slate-50 text-slate-900 w-full min-h-full break-words overflow-visible', fontFamily, fontSizeClass, spacingClass)} style={{ ...fontStyle, padding: pagePadding, minHeight: '297mm', boxSizing: 'border-box' }}>
       <div className="bg-slate-900 p-6 rounded-2xl" style={{ color: primaryColor, breakInside: 'avoid' }}>
         <h1 className="text-2xl font-bold mb-0.5">&gt; {personalInfo.fullName}</h1>
         {personalInfo.jobTitle && (

@@ -639,8 +639,29 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
   const [showSuggestions, setShowSuggestions] = useState(true);
 
+  // Sync print state with browser native print (Ctrl+P or PDF export)
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      if (resume.settings?.fitToOnePage) {
+        document.body.classList.add('fit-one-page');
+      }
+    };
+    const handleAfterPrint = () => {
+      document.body.classList.remove('fit-one-page');
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, [resume.settings?.fitToOnePage]);
+
   const handleDownloadPdf = async () => {
     incrementDownloads();
+    const originalTitle = document.title;
+    const candidateName = resume.content?.personalInfo?.fullName?.trim() || 'Resume';
+    document.title = `${candidateName} — ATS Resume`;
     if (resume.settings?.fitToOnePage) {
       document.body.classList.add('fit-one-page');
     }
@@ -648,6 +669,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
       window.print();
       setTimeout(() => {
         document.body.classList.remove('fit-one-page');
+        document.title = originalTitle;
       }, 1000);
     }, 80);
   };

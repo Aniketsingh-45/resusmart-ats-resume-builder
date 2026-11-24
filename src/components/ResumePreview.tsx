@@ -1906,18 +1906,49 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   return (
     <div 
       id="resume-preview-container" 
-      className="mx-auto bg-white shadow-2xl shrink-0 print:shadow-none print:m-0 print:!overflow-visible print:!min-h-[297mm] print:!h-auto overflow-visible"
+      className={cn(
+        "mx-auto bg-white shadow-2xl shrink-0 print:shadow-none print:m-0 overflow-visible",
+        isFitToOnePage 
+          ? "print:!overflow-hidden print:!h-[297mm] print:!max-h-[297mm]" 
+          : "print:!overflow-visible print:!min-h-[297mm] print:!h-auto"
+      )}
       style={{ 
         width: '210mm', 
         minHeight: '297mm', /* Minimum 1 page */
-        height: 'auto',     /* Automatic multi-page expansion */
+        height: isFitToOnePage ? '297mm' : 'auto',
+        maxHeight: isFitToOnePage ? '297mm' : 'none',
+        overflow: isFitToOnePage ? 'hidden' : 'visible',
         position: 'relative',
         boxSizing: 'border-box'
       }}
     >
+      {/* 1-Page Locked Status Badge */}
+      {isFitToOnePage && (
+        <div className="print:hidden absolute top-2 right-2 z-20 bg-emerald-600 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow pointer-events-none flex items-center gap-1 backdrop-blur-sm">
+          <span>⚡ 1-Page Locked</span>
+        </div>
+      )}
+
+      {/* Visual Page 1 Boundary Guide Line in multi-page mode */}
+      {!isFitToOnePage && (
+        <div 
+          className="print:hidden absolute left-0 right-0 border-b-2 border-dashed border-rose-400 pointer-events-none z-20 flex justify-end px-3" 
+          style={{ top: '297mm' }}
+        >
+          <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded shadow font-mono font-bold tracking-wider -translate-y-1/2">
+            Page 1 Boundary (297mm)
+          </span>
+        </div>
+      )}
+
       <div 
         id="resume-preview-content" 
-        className="h-auto w-full overflow-visible print:!overflow-visible print:!h-auto"
+        className={cn(
+          "w-full",
+          isFitToOnePage 
+            ? "overflow-hidden print:!overflow-hidden h-full max-h-[297mm]" 
+            : "h-auto overflow-visible print:!overflow-visible print:!h-auto"
+        )}
       >
         {templateType === 'modern-professional' && renderModern()}
         {templateType === 'classic-chronological' && renderClassic()}

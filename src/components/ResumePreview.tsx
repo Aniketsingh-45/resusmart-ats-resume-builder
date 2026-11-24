@@ -159,6 +159,93 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
     );
   };
 
+  // 💼 Robust 2-Column Projects Grid (Engineered for Pixel-Perfect Print & Web Rendering)
+  const renderProjectGrid = (styleVariant: 'classic' | 'modern' | 'minimalist' | 'tech' | 'executive' = 'classic') => {
+    return (
+      <div 
+        className="resume-projects-grid flex flex-wrap gap-2 w-full"
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'flex-start',
+          gap: '8px 10px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+        {projects.map((project) => (
+          <div 
+            key={project.id} 
+            className={cn(
+              "resume-project-card rounded-md p-2 flex flex-col justify-between min-w-0",
+              styleVariant === 'tech' ? "bg-slate-50 border border-slate-200 font-mono" :
+              styleVariant === 'minimalist' ? "bg-slate-50/70 border border-slate-200/80" :
+              "bg-slate-50/90 border border-slate-200/90"
+            )}
+            style={{ 
+              flex: '0 0 calc(50% - 5px)',
+              maxWidth: 'calc(50% - 5px)',
+              width: 'calc(50% - 5px)',
+              minWidth: 0,
+              boxSizing: 'border-box',
+              breakInside: 'avoid',
+              pageBreakInside: 'avoid',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact'
+            }}
+          >
+            <div className="flex justify-between items-baseline gap-1.5 min-w-0 w-full mb-0.5">
+              <h3 
+                className={cn(
+                  "font-bold text-slate-900 truncate min-w-0 flex-1",
+                  styleVariant === 'tech' ? "text-[10px] font-mono" : "text-[10.5px]"
+                )} 
+                title={project.name}
+              >
+                {project.name}
+              </h3>
+              {project.link && (
+                <a 
+                  href={normalizeUrl(project.link)} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className={cn(
+                    "font-semibold hover:underline shrink-0 whitespace-nowrap ml-1",
+                    styleVariant === 'tech' ? "text-[9px] font-mono font-bold" : "text-[9px]"
+                  )} 
+                  style={{ color: primaryColor }}
+                >
+                  {displayUrl(project.link)} ↗
+                </a>
+              )}
+            </div>
+
+            {project.description && (
+              <p className={cn("text-slate-600 leading-snug break-words mb-1", styleVariant === 'tech' ? "text-[9px] font-mono" : "text-[9.5px]")}>
+                {project.description}
+              </p>
+            )}
+
+            {project.keyFeatures && project.keyFeatures.length > 0 && !project.description && (
+              <ul className="list-disc ml-3 text-[9px] text-slate-600 space-y-0.5 mb-1">
+                {project.keyFeatures.slice(0, 2).map((feat, i) => (
+                  <li key={i} className="leading-snug break-words">{feat}</li>
+                ))}
+              </ul>
+            )}
+
+            {project.technologies && project.technologies.length > 0 && (
+              <div className={cn("text-slate-500 font-semibold truncate min-w-0 mt-auto pt-0.5", styleVariant === 'tech' ? "text-[8.5px] font-mono" : "text-[9px]")}>
+                <span className="text-slate-400 font-medium">Tech:</span> {project.technologies.join(', ')}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // ==========================================
   // 1. MODERN PROFESSIONAL TEMPLATE
   // ==========================================

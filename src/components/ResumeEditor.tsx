@@ -865,11 +865,11 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   );
 
   return (
-    <div className={`h-full flex flex-col print:bg-none print:bg-white print:overflow-visible print:h-auto overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#080c16] text-slate-100' : 'bg-[#f8fafc] text-slate-900'}`}>
+    <div className={`h-full flex flex-col print:bg-none print:bg-white print:overflow-visible print:h-auto overflow-hidden transition-colors duration-300 ${isDark ? 'bg-[#080c16] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
 
       {/* Import Success Toast */}
       {importSuccessMsg && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[300] bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-3 animate-bounce-in border border-white/20">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-300 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-bold flex items-center gap-3 animate-bounce-in border border-white/20">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
           {importSuccessMsg}
         </div>
@@ -975,10 +975,10 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
         </div>
       </header>
 
-      <div className={`flex-1 flex overflow-hidden flex-col lg:flex-row relative transition-colors duration-300 ${isDark ? 'bg-[#080c16]' : 'bg-[#f1f5f9]'}`}>
+      <div className={`flex-1 flex overflow-hidden flex-col lg:flex-row relative transition-colors duration-300 ${isDark ? 'bg-[#080c16]' : 'bg-slate-100'}`}>
         
         {/* Mobile floating view switcher */}
-        <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 flex justify-center z-[999] pointer-events-none">
+        <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 flex justify-center z-999 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-2xl shadow-2xl"
             style={{
               background: isDark ? 'rgba(11,15,25,0.95)' : 'rgba(255,255,255,0.95)',
@@ -1445,7 +1445,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     <button
                       onClick={handleGenerateSummary}
                       disabled={generatingSummary}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 border border-white/20"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 border border-white/20"
                     >
                       {generatingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                       <span>AI Magic Write</span>
@@ -1512,7 +1512,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     </div>
                     <button 
                       onClick={addExperience} 
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
                     >
                       <Plus className="w-3.5 h-3.5" /> <span>Add Role</span>
                     </button>
@@ -1670,7 +1670,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                         const newEdu: Education = { id: Math.random().toString(), school: '', degree: '', field: '', graduationDate: '' };
                         updateContent('education', [...(resume.content?.education || []), newEdu]);
                       }} 
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-amber-500 to-orange-500 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
                     >
                       <Plus className="w-3.5 h-3.5" /> <span>Add Education</span>
                     </button>
@@ -1808,7 +1808,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                                 newSkills[idx] = e.target.value;
                                 updateContent('skills', newSkills);
                               }}
-                              className={`rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-[120px] ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
+                              className={`rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-30 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
                             />
                             <button 
                               onClick={() => {
@@ -1835,7 +1835,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             }
                           }
                         }}
-                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-[140px] ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
+                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-35 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
                       />
 
                       <datalist id="skills-suggestions">
@@ -1861,7 +1861,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     </div>
                     <button 
                       onClick={addProject} 
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
+                      className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all border border-white/20"
                     >
                       <Plus className="w-3.5 h-3.5" /> <span>Add Project</span>
                     </button>
@@ -2070,7 +2070,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                                 newCerts[idx] = e.target.value;
                                 updateContent('certifications', newCerts);
                               }}
-                              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-[160px] ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
+                              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-40 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
                             />
                             <button 
                               onClick={() => {
@@ -2096,7 +2096,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             }
                           }
                         }}
-                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-[170px] ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
+                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-42.5 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
                       />
                     </div>
                   </div>
@@ -2313,7 +2313,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
               exit={{ opacity: 0, x: 20 }}
               className={cn(
                 "flex-col overflow-hidden shrink-0 transition-colors duration-300",
-                mobileView === 'preview' ? "fixed inset-0 z-[90] w-full h-full pb-20 flex" : "hidden lg:flex lg:w-[380px] xl:w-[440px] 2xl:w-[480px]",
+                mobileView === 'preview' ? "fixed inset-0 z-90 w-full h-full pb-20 flex" : "hidden lg:flex lg:w-95 xl:w-110 2xl:w-120",
                 "print:flex print:static print:bg-white print:w-full print:h-auto print:overflow-visible"
               )}
               style={{
@@ -2397,7 +2397,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
         <AnimatePresence>
           {(!isPreviewMode && showLivePreview && showAtsPanel && mobileView === 'preview') && (
             <motion.div 
-              className="fixed inset-0 z-[90] w-full h-full pb-24 flex flex-col overflow-hidden bg-[#0a0d14] print:hidden"
+              className="fixed inset-0 z-90 w-full h-full pb-24 flex flex-col overflow-hidden bg-[#0a0d14] print:hidden"
             >
               <div className="print:hidden h-12 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-4 flex items-center justify-between shrink-0 shadow-md">
                 <div className="flex items-center gap-2">
@@ -2441,7 +2441,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               className={cn(
                 "print:hidden flex-col shrink-0 transition-colors duration-300",
-                mobileView === 'ats' ? "fixed inset-0 w-full h-full pb-20 overflow-y-auto flex z-[90]" : "hidden lg:flex lg:w-[340px] xl:w-[380px] overflow-y-auto"
+                mobileView === 'ats' ? "fixed inset-0 w-full h-full pb-20 overflow-y-auto flex z-90" : "hidden lg:flex lg:w-85 xl:w-95 overflow-y-auto"
               )}
               style={{
                 background: isDark ? 'rgba(6,8,17,0.95)' : '#ffffff',
@@ -2545,7 +2545,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                         <Info className="w-6 h-6 text-violet-500" />
                       </div>
                       <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Scanner Ready</p>
-                      <p className={`text-xs max-w-[200px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Paste a job description and scan to check your match score.</p>
+                      <p className={`text-xs max-w-50 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Paste a job description and scan to check your match score.</p>
                     </div>
                   )}
                 </AnimatePresence>
@@ -2563,7 +2563,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-[150] backdrop-blur-md flex flex-col ${isDark ? 'bg-slate-950/95' : 'bg-slate-900/80'}`}
+            className={`fixed inset-0 z-150 backdrop-blur-md flex flex-col ${isDark ? 'bg-slate-950/95' : 'bg-slate-900/80'}`}
           >
             <div className={`h-16 px-6 md:px-10 flex items-center justify-between shrink-0 ${isDark ? 'bg-slate-900/90 border-b border-white/10' : 'bg-white border-b border-slate-200'}`}>
               <div className="flex items-center gap-3">
@@ -2580,7 +2580,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   <button onClick={() => setManualScale(prev => Math.min(2, (prev || 1) + 0.1))} className={`p-1.5 rounded transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-200'}`}><Plus className="w-4 h-4" /></button>
                 </div>
 
-                <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow-md">
+                <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow-md">
                   <Download className="w-4 h-4" /> <span className="hidden sm:inline">Download PDF</span>
                 </button>
                 
@@ -2615,7 +2615,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
+            className="fixed inset-0 z-200 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
             onClick={(e) => e.target === e.currentTarget && !isGenerating && setIsAiModalOpen(false)}
           >
             <motion.div
@@ -2919,7 +2919,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     }
                   }}
                   disabled={isImporting || (!extractedText.trim() && !importText.trim())}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-mono font-bold text-xs shadow-lg shadow-indigo-600/30 hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-white/20"
+                  className="flex-1 px-6 py-3 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-mono font-bold text-xs shadow-lg shadow-indigo-600/30 hover:scale-[1.02] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-white/20"
                 >
                   {isImporting ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Filling Builder…</>

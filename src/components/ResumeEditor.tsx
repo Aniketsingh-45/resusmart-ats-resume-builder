@@ -18,6 +18,7 @@ import Cropper, { Point, Area } from 'react-easy-crop';
 import { cn } from '../utils/cn';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeToggle } from './ThemeToggle';
+import { ANIKET_RESUME_CONTENT, ANIKET_RESUME_SETTINGS } from '../data/aniketResumePreset';
 
 interface ResumeEditorProps {
   resumeId: string | null;
@@ -627,6 +628,18 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
     incrementDownloads();
   };
 
+  const handleLoadAniketPreset = () => {
+    setResume(prev => ({
+      ...prev,
+      title: 'Aniket Singh — ATS Resume (1-Page)',
+      templateType: 'classic-chronological',
+      content: { ...ANIKET_RESUME_CONTENT },
+      settings: { ...prev.settings, ...ANIKET_RESUME_SETTINGS }
+    }));
+    setImportSuccessMsg('⚡ Loaded Aniket Singh 1-Page ATS Resume Preset with all 6 projects!');
+    setTimeout(() => setImportSuccessMsg(null), 4000);
+  };
+
   const handleGenerateSummary = async () => {
     setGeneratingSummary(true);
     try {
@@ -946,6 +959,16 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', border: '1px solid rgba(255,255,255,0.20)' }}>
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden md:inline">AI Fill</span>
+          </button>
+
+          {/* Aniket 1-Page Preset Button */}
+          <button 
+            onClick={handleLoadAniketPreset} 
+            title="Load Aniket Singh's Verified 1-Page ATS Resume with all 6 projects"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 border border-amber-400/50 transition-all hover:scale-105 active:scale-95 shadow-sm"
+          >
+            <span>⚡</span>
+            <span className="hidden sm:inline">1-Page Preset</span>
           </button>
 
           {/* Import */}

@@ -10,7 +10,8 @@ import {
   Save, ArrowLeft, Plus, Minus, Trash2, Wand2, 
   ChevronRight, AlertTriangle, CheckCircle2, 
   X, User, EyeOff, Info, Download, Loader2, Search, Sparkles,
-  FileText, GraduationCap, Eye, Edit3, Briefcase, Lightbulb, Lock, Upload, Github, Linkedin, Activity, Target, TrendingUp, AlertCircle, Camera, Award
+  FileText, GraduationCap, Eye, Edit3, Briefcase, Lightbulb, Lock, Upload, Github, Linkedin, Activity, Target, TrendingUp, AlertCircle, Camera, Award,
+  Zap, Maximize2, Columns, Rows, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ResumePreview } from './ResumePreview';
@@ -244,16 +245,49 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   const { isDark } = useTheme();
   const [resume, setResume] = useState<Partial<Resume>>({
     title: 'New Resume',
-    templateType: 'modern-professional',
+    templateType: 'classic-chronological',
     content: INITIAL_CONTENT,
     settings: {
       primaryColor: '#2563eb',
       fontFamily: 'Inter',
       fontSize: 'medium',
-      spacing: 'normal'
+      spacing: 'compact',
+      margins: 'compact',
+      projectLayout: 'single',
+      fitToOnePage: false
     },
     atsScore: 0
   });
+
+  const handleAutoFitOnePage = () => {
+    setResume(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        fitToOnePage: true,
+        fontSize: 'tiny',
+        spacing: 'ultra-compact',
+        margins: 'compact',
+        projectLayout: (prev.content?.projects?.length || 0) >= 4 ? 'grid' : (prev.settings?.projectLayout || 'single')
+      }
+    }));
+    setImportSuccessMsg('⚡ Single-Page Mode active! Width expanded & layout tuned for 1 page.');
+    setTimeout(() => setImportSuccessMsg(null), 5000);
+  };
+
+  const handleLoadAniketResume = () => {
+    setResume(prev => ({
+      ...prev,
+      title: 'Aniket Singh - 1-Page ATS Resume',
+      templateType: 'classic-chronological',
+      content: ANIKET_RESUME_CONTENT,
+      settings: ANIKET_RESUME_SETTINGS,
+      atsScore: 98
+    }));
+    setActiveSection('personal');
+    setImportSuccessMsg('📄 Loaded Aniket Singh’s ATS Resume with all 6 projects fitted to 1 page!');
+    setTimeout(() => setImportSuccessMsg(null), 5000);
+  };
   const [loading, setLoading] = useState(!!resumeId);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -607,8 +641,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
   const handleDownloadPdf = async () => {
     incrementDownloads();
+    if (resume.settings?.fitToOnePage) {
+      document.body.classList.add('fit-one-page');
+    }
     setTimeout(() => {
       window.print();
+      setTimeout(() => {
+        document.body.classList.remove('fit-one-page');
+      }, 1000);
     }, 80);
   };
 
@@ -626,18 +666,6 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
     fileDownload.click();
     document.body.removeChild(fileDownload);
     incrementDownloads();
-  };
-
-  const handleLoadAniketPreset = () => {
-    setResume(prev => ({
-      ...prev,
-      title: 'Aniket Singh — ATS Resume (1-Page)',
-      templateType: 'classic-chronological',
-      content: { ...ANIKET_RESUME_CONTENT },
-      settings: { ...prev.settings, ...ANIKET_RESUME_SETTINGS }
-    }));
-    setImportSuccessMsg('⚡ Loaded Aniket Singh 1-Page ATS Resume Preset with all 6 projects!');
-    setTimeout(() => setImportSuccessMsg(null), 4000);
   };
 
   const handleGenerateSummary = async () => {
@@ -941,6 +969,40 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
           <div className="hidden lg:block w-px h-5 mx-0.5" style={{ background: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)' }} />
 
+          {/* Quick 1-Page Mode Toggle */}
+          <button 
+            type="button"
+            onClick={() => setResume(prev => ({
+              ...prev,
+              settings: {
+                ...prev.settings,
+                fitToOnePage: !prev.settings?.fitToOnePage,
+                ...(prev.settings?.fitToOnePage ? {} : { margins: 'compact' })
+              }
+            }))} 
+            title={resume.settings?.fitToOnePage ? "Single-Page Lock Active (Click to switch to multi-page)" : "Fit and Lock Resume to 1 Page"}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:scale-105 shadow-sm border",
+              resume.settings?.fitToOnePage
+                ? "bg-emerald-600/20 text-emerald-500 border-emerald-500/40"
+                : isDark ? "bg-white/5 text-slate-400 border-white/10 hover:text-white" : "bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900"
+            )}
+          >
+            <Zap className={cn("w-3.5 h-3.5", resume.settings?.fitToOnePage ? "text-emerald-400" : "text-amber-500")} />
+            <span className="hidden sm:inline font-mono">{resume.settings?.fitToOnePage ? "1-Page: ON" : "Fit 1-Page"}</span>
+          </button>
+
+          {/* Sample 1-Page Resume (Aniket) */}
+          <button
+            type="button"
+            onClick={handleLoadAniketResume}
+            title="Load Aniket Singh's 1-Page ATS Resume with all 6 projects"
+            className={`hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:scale-105 ${isDark ? 'text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 hover:bg-cyan-900/40' : 'text-cyan-800 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100'}`}
+          >
+            <FileText className="w-3.5 h-3.5 text-cyan-500" />
+            <span>Sample (Aniket)</span>
+          </button>
+
           {/* ATS Score */}
           <button onClick={() => setShowAtsPanel(!showAtsPanel)} title="ATS Keyword Match Analysis"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:scale-105 shadow-sm"
@@ -961,16 +1023,6 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             <span className="hidden md:inline">AI Fill</span>
           </button>
 
-          {/* Aniket 1-Page Preset Button */}
-          <button 
-            onClick={handleLoadAniketPreset} 
-            title="Load Aniket Singh's Verified 1-Page ATS Resume with all 6 projects"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 border border-amber-400/50 transition-all hover:scale-105 active:scale-95 shadow-sm"
-          >
-            <span>⚡</span>
-            <span className="hidden sm:inline">1-Page Preset</span>
-          </button>
-
           {/* Import */}
           <input ref={autoFillInputRef} type="file" className="hidden"
             accept=".pdf,image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
@@ -989,11 +1041,11 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
           </button>
 
           {/* Export PDF */}
-          <button onClick={handleDownloadPdf} title="Download Multi-Page PDF"
+          <button onClick={handleDownloadPdf} title={resume.settings?.fitToOnePage ? "Download Single-Page PDF" : "Download PDF"}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-md"
             style={{ background: 'linear-gradient(135deg, #059669 0%, #0891b2 100%)', border: '1px solid rgba(255,255,255,0.20)' }}>
             <Download className="w-3.5 h-3.5" />
-            <span>PDF</span>
+            <span>{resume.settings?.fitToOnePage ? "1-Page PDF" : "PDF"}</span>
           </button>
         </div>
       </header>
@@ -2278,45 +2330,199 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       </div>
                     </div>
 
+                    {/* ⚡ One-Page Resume Optimizer Card */}
+                    <div className="pt-3 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
+                      <div className="p-3.5 rounded-2xl border" style={{
+                        background: resume.settings?.fitToOnePage 
+                          ? (isDark ? 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.10))' : 'linear-gradient(135deg, #ecfdf5, #f0fdf4)')
+                          : (isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc'),
+                        borderColor: resume.settings?.fitToOnePage ? '#10b98150' : (isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0')
+                      }}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{
+                              background: resume.settings?.fitToOnePage ? '#10b981' : (isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0'),
+                              color: resume.settings?.fitToOnePage ? '#ffffff' : (isDark ? '#94a3b8' : '#64748b')
+                            }}>
+                              <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>One-Page Resume Mode</p>
+                              <p className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {resume.settings?.fitToOnePage ? '✓ Strict 1-Page constraints active' : 'Lock resume height to exactly 1 A4 page'}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setResume(prev => ({
+                              ...prev,
+                              settings: {
+                                ...prev.settings,
+                                fitToOnePage: !prev.settings?.fitToOnePage,
+                                ...(prev.settings?.fitToOnePage ? {} : { margins: 'compact' })
+                              }
+                            }))}
+                            className={cn(
+                              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none",
+                              resume.settings?.fitToOnePage ? "bg-emerald-600" : isDark ? "bg-slate-800" : "bg-slate-300"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
+                                resume.settings?.fitToOnePage ? "translate-x-6" : "translate-x-1"
+                              )}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={handleAutoFitOnePage}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-linear-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>⚡ Auto-Fit to 1 Page</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleLoadAniketResume}
+                            className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border transition-all ${isDark ? 'bg-slate-900 border-slate-700 text-cyan-400 hover:text-white' : 'bg-white border-slate-300 text-cyan-700 hover:text-slate-900'}`}
+                            title="Load Aniket Singh's 1-Page ATS resume preset"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-cyan-500" />
+                            <span>Load Aniket Resume</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Margins & Width Expansion */}
+                    <div className="space-y-2 pt-2 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
+                      <div className="flex items-center justify-between">
+                        <label className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Margins & Printable Width</label>
+                        <span className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Expand width for 1-page fit</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'compact', label: 'Compact', sub: 'Expand Width 95%' },
+                          { id: 'normal', label: 'Standard', sub: 'Balanced 88%' },
+                          { id: 'wide', label: 'Relaxed', sub: 'Spacious 80%' },
+                        ].map(m => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, margins: m.id as any } }))}
+                            className={cn(
+                              "p-2 rounded-xl border text-left transition-all",
+                              (resume.settings?.margins === m.id || (!resume.settings?.margins && m.id === 'compact'))
+                                ? "border-indigo-500 bg-indigo-500/15 text-indigo-500 font-bold"
+                                : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
+                            )}
+                          >
+                            <p className="text-xs font-bold">{m.label}</p>
+                            <p className="text-[9px] font-mono opacity-75">{m.sub}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Font Scaling & Density */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
                       <div className="space-y-2">
                         <label className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Font Scaling</label>
-                        <div className="flex gap-2">
-                          {(['small', 'medium', 'large'] as const).map(size => (
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { id: 'tiny', label: 'Tiny', pt: '9.5pt' },
+                            { id: 'small', label: 'Small', pt: '10.5pt' },
+                            { id: 'medium', label: 'Mid', pt: '11.5pt' },
+                            { id: 'large', label: 'Large', pt: '13pt' }
+                          ].map(size => (
                             <button
-                              key={size}
-                              onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, fontSize: size } }))}
+                              key={size.id}
+                              type="button"
+                              onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, fontSize: size.id as any } }))}
                               className={cn(
-                                "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all capitalize flex-1",
-                                resume.settings?.fontSize === size
+                                "py-1.5 px-1 rounded-xl border text-center transition-all",
+                                (resume.settings?.fontSize === size.id || (!resume.settings?.fontSize && size.id === 'medium'))
                                   ? "border-indigo-500 bg-indigo-500/20 text-indigo-500 font-bold"
                                   : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
                               )}
                             >
-                              {size}
+                              <p className="text-[11px] font-bold">{size.label}</p>
+                              <p className="text-[8px] font-mono opacity-70">{size.pt}</p>
                             </button>
                           ))}
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Density</label>
-                        <div className="flex gap-2">
-                          {(['compact', 'normal', 'loose'] as const).map(space => (
+                        <label className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Spacing Density</label>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { id: 'ultra-compact', label: 'Ultra', sub: 'Tight' },
+                            { id: 'compact', label: 'Tight', sub: 'Fit 1P' },
+                            { id: 'normal', label: 'Normal', sub: 'Std' },
+                            { id: 'loose', label: 'Loose', sub: 'Multi' }
+                          ].map(space => (
                             <button
-                              key={space}
-                              onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, spacing: space } }))}
+                              key={space.id}
+                              type="button"
+                              onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, spacing: space.id as any } }))}
                               className={cn(
-                                "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all capitalize flex-1",
-                                resume.settings?.spacing === space
+                                "py-1.5 px-1 rounded-xl border text-center transition-all",
+                                (resume.settings?.spacing === space.id || (!resume.settings?.spacing && space.id === 'compact'))
                                   ? "border-indigo-500 bg-indigo-500/20 text-indigo-500 font-bold"
                                   : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
                               )}
                             >
-                              {space}
+                              <p className="text-[11px] font-bold">{space.label}</p>
+                              <p className="text-[8px] font-mono opacity-70">{space.sub}</p>
                             </button>
                           ))}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Projects Layout (Grid vs Single Column) */}
+                    <div className="space-y-2 pt-2 border-t" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
+                      <label className={`text-xs font-mono font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-800'}`}>Projects Layout</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, projectLayout: 'grid' } }))}
+                          className={cn(
+                            "flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all",
+                            resume.settings?.projectLayout === 'grid'
+                              ? "border-indigo-500 bg-indigo-500/15 text-indigo-500 font-bold"
+                              : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
+                          )}
+                        >
+                          <Columns className="w-4 h-4 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold">2-Column Grid</p>
+                            <p className="text-[9px] font-mono opacity-75">Saves 50% vertical space</p>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, projectLayout: 'single' } }))}
+                          className={cn(
+                            "flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all",
+                            (resume.settings?.projectLayout === 'single' || !resume.settings?.projectLayout)
+                              ? "border-indigo-500 bg-indigo-500/15 text-indigo-500 font-bold"
+                              : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
+                          )}
+                        >
+                          <Rows className="w-4 h-4 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold">Single Column</p>
+                            <p className="text-[9px] font-mono opacity-75">Traditional ATS list</p>
+                          </div>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2353,9 +2559,47 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Live Preview</span>
+                  {resume.settings?.fitToOnePage && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
+                      1-Page
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  {/* Quick 1-Page Toggle */}
+                  <button 
+                    type="button"
+                    onClick={() => setResume(prev => ({
+                      ...prev,
+                      settings: {
+                        ...prev.settings,
+                        fitToOnePage: !prev.settings?.fitToOnePage,
+                        ...(prev.settings?.fitToOnePage ? {} : { margins: 'compact' })
+                      }
+                    }))}
+                    title="Toggle single-page layout mode"
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all border",
+                      resume.settings?.fitToOnePage 
+                        ? "bg-emerald-600 text-white border-emerald-500 shadow-sm" 
+                        : isDark ? "bg-white/5 text-slate-400 border-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:text-slate-900"
+                    )}
+                  >
+                    <Zap className={cn("w-3 h-3", resume.settings?.fitToOnePage ? "text-amber-300" : "text-amber-500")} />
+                    <span>{resume.settings?.fitToOnePage ? '1-Page: ON' : '1-Page Fit'}</span>
+                  </button>
+
+                  {/* Auto-Fit Button */}
+                  <button 
+                    type="button"
+                    onClick={handleAutoFitOnePage}
+                    title="Auto-tune margins, font sizes, and layout to fit in 1 page"
+                    className={`hidden xl:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${isDark ? 'text-violet-300 bg-violet-950/40 border border-violet-800/60 hover:bg-violet-900/40' : 'text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100'}`}
+                  >
+                    <Sparkles className="w-3 h-3 text-violet-500" />
+                    <span>Auto-Fit</span>
+                  </button>
                   {/* Zoom Controls */}
                   <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{
                     background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(241,245,249,0.90)',
@@ -2780,7 +3024,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
         {isImportModalOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
+            className="fixed inset-0 z-200 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
             onClick={(e) => e.target === e.currentTarget && setIsImportModalOpen(false)}
           >
             <motion.div

@@ -45,20 +45,45 @@ export function ResumePreview({ content, templateType, settings }: ResumePreview
   const fontFamily = fontEntry?.cls ?? 'font-sans';
   const fontStyle: React.CSSProperties = { fontFamily: fontEntry?.family ?? `"${fontKey}", sans-serif` };
   
+  const isFitToOnePage = !!settings?.fitToOnePage;
+
+  // Font Size:
   const fontSizeClass = 
-    settings?.fontSize === 'small' ? 'text-[13px]' : 
-    settings?.fontSize === 'large' ? 'text-[17px]' : 
-    'text-[15px]';
+    settings?.fontSize === 'tiny' ? 'text-[11.5px] leading-snug' : 
+    settings?.fontSize === 'small' ? 'text-[12.5px] leading-snug' : 
+    settings?.fontSize === 'large' ? 'text-[16px] leading-normal' : 
+    settings?.fontSize === 'medium' ? 'text-[14px] leading-normal' :
+    isFitToOnePage ? 'text-[11.5px] leading-snug' : 'text-[14px] leading-normal';
 
+  // Section Spacing:
   const spacingClass = 
-    settings?.spacing === 'compact' ? 'space-y-4' : 
-    settings?.spacing === 'loose' ? 'space-y-10' : 
-    'space-y-7';
+    settings?.spacing === 'ultra-compact' ? 'space-y-2' : 
+    settings?.spacing === 'compact' ? 'space-y-3' : 
+    settings?.spacing === 'loose' ? 'space-y-8' : 
+    settings?.spacing === 'normal' ? 'space-y-5' :
+    isFitToOnePage ? 'space-y-2' : 'space-y-5';
 
+  // Item Spacing:
   const itemSpacingClass = 
+    settings?.spacing === 'ultra-compact' ? 'space-y-0.5' : 
     settings?.spacing === 'compact' ? 'space-y-1' : 
-    settings?.spacing === 'loose' ? 'space-y-4' : 
-    'space-y-2';
+    settings?.spacing === 'loose' ? 'space-y-3.5' : 
+    settings?.spacing === 'normal' ? 'space-y-2' :
+    isFitToOnePage ? 'space-y-0.5' : 'space-y-1.5';
+
+  // Page Padding / Margins (Width Expansion):
+  // When compact or fitToOnePage, padding is 16px 22px, maximizing printable width!
+  const pagePadding = 
+    settings?.margins === 'compact' || isFitToOnePage ? '16px 22px' : 
+    settings?.margins === 'wide' ? '36px 44px' : 
+    '24px 30px';
+
+  // Project Layout (Grid vs Single Column):
+  const isProjectGrid = 
+    settings?.projectLayout === 'grid' || (isFitToOnePage && projects.length >= 4);
+
+  // Compact mode flag for headings & margins
+  const isCompactMode = isFitToOnePage || settings?.fontSize === 'tiny' || settings?.spacing === 'ultra-compact' || settings?.margins === 'compact';
 
   // 🇮🇳 Traditional & Personal Details Block (Adjustable & Conditional)
   const renderIndianDetails = (isDark = false) => {

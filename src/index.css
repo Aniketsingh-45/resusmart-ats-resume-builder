@@ -390,6 +390,22 @@ body[data-theme="bright"] .surface-grid {
     -webkit-transform: none !important;
   }
 
+  /* Strict single-page constraints when Fit-to-1-Page mode is enabled (takes precedence over default print root) */
+  body.fit-one-page,
+  body.fit-one-page html,
+  body.fit-one-page #root,
+  body.fit-one-page #print-resume-root,
+  body.fit-one-page #print-resume-root #resume-preview-container,
+  body.fit-one-page #print-resume-root #resume-preview-content {
+    height: 297mm !important;
+    max-height: 297mm !important;
+    min-height: 297mm !important;
+    overflow: hidden !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+  }
+
   /* Page break & fragmentation rules for clean multi-page resumes */
   .break-inside-avoid, 
   [data-break-inside-avoid="true"], 

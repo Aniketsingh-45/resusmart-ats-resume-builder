@@ -437,7 +437,6 @@ body[data-theme="bright"] .surface-grid {
     page-break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
     overflow: hidden !important;
   }
 

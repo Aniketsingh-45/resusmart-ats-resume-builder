@@ -328,14 +328,17 @@ body[data-theme="bright"] .surface-grid {
     print-color-adjust: exact !important;
   }
 
-  /* Hide screen-only elements during PDF print */
-  header, nav, aside, footer, #mobile-nav, button, 
+  /* Hide screen-only elements during PDF print without affecting #print-resume-root */
   .print\:hidden,
-  .fixed, 
-  .backdrop-blur-md, 
-  .glass-panel, 
-  .glass-card,
-  #screen-preview-wrapper {
+  .fixed:not(#print-resume-root *):not(#print-resume-root),
+  #mobile-nav,
+  #screen-preview-wrapper,
+  #mobile-preview-wrapper,
+  header:not(#print-resume-root *),
+  nav:not(#print-resume-root *),
+  aside:not(#print-resume-root *),
+  footer:not(#print-resume-root *),
+  button:not(#print-resume-root *) {
     display: none !important;
   }
 

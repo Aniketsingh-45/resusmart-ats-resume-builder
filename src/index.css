@@ -275,13 +275,30 @@ body[data-theme="bright"] .surface-grid {
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 
+/* Offscreen measurement container for print parity (screen keeps exact A4 layout without paint cost) */
+#print-resume-root.print-offscreen {
+  position: fixed;
+  left: -12000px;
+  top: 0;
+  width: 210mm;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* ──────────────────────────────────────────
-   PRINT / PDF (Zero-artifact vector export with clickable links)
+   PRINT / PDF (Zero-artifact vector export — suppresses browser localhost/URL headers & keeps 1-page parity)
 ────────────────────────────────────────── */
 @media print {
   @page {
     size: A4 portrait;
     margin: 0 !important;
+    @top-left { content: none !important; }
+    @top-center { content: none !important; }
+    @top-right { content: none !important; }
+    @bottom-left { content: none !important; }
+    @bottom-center { content: none !important; }
+    @bottom-right { content: none !important; }
   }
 
   *, *::before, *::after {

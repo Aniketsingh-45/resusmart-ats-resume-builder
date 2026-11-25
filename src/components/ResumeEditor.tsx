@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue, useMemo, useCallback, useRef } from 'react';
 import { db, doc, getDoc, setDoc, auth, collection } from '../firebase';
 import { Resume, ResumeContent, Experience, Education, Project } from '../types';
 import { analyzeResumeATS, enhanceAchievement, generateResumeContent, generateProjectFeatures, generateSummary, parseResumeText, parseResumeFromImage, improveGrammar, optimizeResumeATS, importFromGitHub, importFromLinkedIn } from '../services/aiService';
@@ -13,7 +13,6 @@ import {
   FileText, GraduationCap, Eye, Edit3, Briefcase, Lightbulb, Lock, Upload, Github, Linkedin, Activity, Target, TrendingUp, AlertCircle, Camera, Award,
   Zap, Maximize2, Columns, Rows, Check
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { ResumePreview } from './ResumePreview';
 import Cropper, { Point, Area } from 'react-easy-crop';
 import { cn } from '../utils/cn';
@@ -23,6 +22,7 @@ import { ANIKET_RESUME_CONTENT, ANIKET_RESUME_SETTINGS } from '../data/aniketRes
 
 interface ResumeEditorProps {
   resumeId: string | null;
+  initialTemplate?: string;
   onBack: () => void;
 }
 
@@ -241,23 +241,57 @@ const ATS_PALETTES = [
   { name: 'Steel Slate', color: '#334155', atsScore: '99% Standard', tag: 'Universal Clean' }
 ];
 
-export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
+const templates = [
+  { id: 'classic-chronological', name: 'Classic Chronological', icon: FileText, color: 'slate', atsRating: 100, tag: '100% ATS Gold Standard', category: 'Universal Single-Column', filterGroup: 'ats-100', recommendedFor: 'Enterprise, Tech, Finance & All ATS Parsers' },
+  { id: 'ats-harvard-ivy', name: 'Harvard / Ivy Executive', icon: Award, color: 'slate', atsRating: 100, tag: '100% ATS Executive Pick', category: 'Classic Serif Single-Column', filterGroup: 'ats-100', recommendedFor: 'FAANG, Wall Street, Consulting & Grad Roles' },
+  { id: 'ats-jake-clean', name: 'SWE Clean Pro (100% ATS)', icon: Zap, color: 'indigo', atsRating: 100, tag: '100% Engineer Standard', category: 'High-Density Tech Single', filterGroup: 'ats-100', recommendedFor: 'Software Engineers, AI/ML & CS Students' },
+  { id: 'minimalist-clean', name: 'Minimalist Clean', icon: CheckCircle2, color: 'slate', atsRating: 100, tag: '100% Zero-Parsing Glitch', category: 'Text-First Minimal', filterGroup: 'ats-100', recommendedFor: 'Law, Academia, Product & Global Roles' },
+  { id: 'modern-professional', name: 'Modern Dark Sidebar', icon: Sparkles, color: 'brand', atsRating: 99, tag: '99% ATS Split Pro', category: 'Dark Sidebar Split', filterGroup: 'split', recommendedFor: 'Software Engineers, Product & Data' },
+  { id: 'executive-pro', name: 'Executive Pro Header', icon: TrendingUp, color: 'slate', atsRating: 99, tag: '99% Leadership ATS', category: 'Executive Banner', filterGroup: 'split', recommendedFor: 'Staff / Principal Leads, VPs & Directors' },
+  { id: 'tech-focused', name: 'Tech & Terminal Pro', icon: Search, color: 'emerald', atsRating: 98, tag: '98% Tech ATS Standard', category: 'Monospace Tech', filterGroup: 'ats-100', recommendedFor: 'Cloud DevOps, Backend & AI Developers' },
+  { id: 'student-entry', name: 'Student / Entry-Level', icon: GraduationCap, color: 'emerald', atsRating: 98, tag: '98% Campus ATS Standard', category: 'Education Priority', filterGroup: 'split', recommendedFor: 'Freshers, Interns & Graduates' },
+  { id: 'executive-minimal', name: 'Executive Minimal', icon: Briefcase, color: 'indigo', atsRating: 97, tag: '97% Clean Hierarchy', category: 'Compact Professional', filterGroup: 'creative', recommendedFor: 'Consulting, Operations & Management' },
+  { id: 'creative-vibrant', name: 'Creative Vibrant', icon: Wand2, color: 'violet', atsRating: 95, tag: '95% Modern ATS Accent', category: 'Modern Vibrant Split', filterGroup: 'creative', recommendedFor: 'Designers, Product & Growth' },
+  { id: 'modern-creative', name: 'Modern Creative Story', icon: Sparkles, color: 'brand', atsRating: 94, tag: '94% Portfolio Layout', category: 'Visual Accent', filterGroup: 'creative', recommendedFor: 'Startups, Agencies & Marketing' },
+  { id: 'modern-photo', name: 'Executive Photo Pro', icon: User, color: 'brand', atsRating: 93, tag: '93% International CV', category: 'Photo Sidebar', filterGroup: 'split', recommendedFor: 'International CVs & Media Roles' },
+];
+
+export function ResumeEditor({ resumeId, initialTemplate, onBack }: ResumeEditorProps) {
   const { isDark } = useTheme();
   const [resume, setResume] = useState<Partial<Resume>>({
     title: 'New Resume',
-    templateType: 'classic-chronological',
+    templateType: initialTemplate || 'classic-chronological',
     content: INITIAL_CONTENT,
     settings: {
       primaryColor: '#2563eb',
       fontFamily: 'Inter',
-      fontSize: 'medium',
+      fontSize: 'small',
       spacing: 'compact',
       margins: 'compact',
-      projectLayout: 'single',
-      fitToOnePage: false
+      projectLayout: 'grid',
+      fitToOnePage: true
     },
     atsScore: 0
   });
+
+  const [liveFitScale, setLiveFitScale] = useState(1);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const deferredContent = useDeferredValue(resume.content);
+  const deferredSettings = useDeferredValue(resume.settings);
+  const deferredTemplate = useDeferredValue(resume.templateType);
+
+  // Idle-debounced print snapshot keeps offscreen print tree at 0% CPU while editing/typing
+  const [printSnapshot, setPrintSnapshot] = useState(resume);
+  useEffect(() => {
+    const id = setTimeout(() => setPrintSnapshot(resume), 600);
+    return () => clearTimeout(id);
+  }, [resume]);
+
+  const [templateFilter, setTemplateFilter] = useState<'all' | 'ats-100' | 'split' | 'creative'>('all');
+  const [newSkillInput, setNewSkillInput] = useState('');
+  const [newCertInput, setNewCertInput] = useState('');
+  const [techDrafts, setTechDrafts] = useState<Record<string, string>>({});
 
   const handleAutoFitOnePage = () => {
     setResume(prev => ({
@@ -365,7 +399,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
     }
 
     return () => observer.disconnect();
-  }, [isPreviewMode, resume.templateType, showLivePreview, manualScale]);
+  }, [isPreviewMode, resume.templateType, showLivePreview, manualScale, mobileView, showAtsPanel]);
 
   const [resumeContext, setResumeContext] = useState<'private' | 'govt'>('private');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -386,119 +420,54 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
 
-  const templates = [
-    { 
-      id: 'classic-chronological', 
-      name: 'Classic Chronological', 
-      icon: FileText, 
-      color: 'slate',
-      atsRating: 100,
-      tag: '100% ATS Gold Standard',
-      category: 'Universal Single-Column',
-      recommendedFor: 'Enterprise, Tech, Finance & All ATS Parsers'
-    },
-    { 
-      id: 'modern-professional', 
-      name: 'Modern Professional', 
-      icon: Sparkles, 
-      color: 'brand',
-      atsRating: 99,
-      tag: '99% ATS Top Pick',
-      category: 'Single-Column Clean',
-      recommendedFor: 'Software Engineers, Product & Data'
-    },
-    { 
-      id: 'minimalist-clean', 
-      name: 'Minimalist Clean', 
-      icon: CheckCircle2, 
-      color: 'slate',
-      atsRating: 100,
-      tag: '100% Zero-Parsing Glitch',
-      category: 'Text-First Minimal',
-      recommendedFor: 'Law, Academia, Product & Global Roles'
-    },
-    { 
-      id: 'tech-focused', 
-      name: 'Tech & Terminal Pro', 
-      icon: Search, 
-      color: 'emerald',
-      atsRating: 98,
-      tag: '98% Tech ATS Standard',
-      category: 'Monospace Tech',
-      recommendedFor: 'Cloud DevOps, Backend & AI Developers'
-    },
-    { 
-      id: 'executive-pro', 
-      name: 'Executive Pro Header', 
-      icon: TrendingUp, 
-      color: 'slate',
-      atsRating: 99,
-      tag: '99% Leadership ATS',
-      category: 'Executive Banner',
-      recommendedFor: 'Staff / Principal Leads, VPs & Directors'
-    },
-    { 
-      id: 'student-entry', 
-      name: 'Student / Entry-Level', 
-      icon: GraduationCap, 
-      color: 'emerald',
-      atsRating: 98,
-      tag: '98% Campus ATS Standard',
-      category: 'Education Priority',
-      recommendedFor: 'Freshers, Interns & Graduates'
-    },
-    { 
-      id: 'executive-minimal', 
-      name: 'Executive Minimal', 
-      icon: Briefcase, 
-      color: 'indigo',
-      atsRating: 96,
-      tag: '96% Clean Hierarchy',
-      category: 'Compact Professional',
-      recommendedFor: 'Consulting, Operations & Management'
-    },
-    { 
-      id: 'creative-vibrant', 
-      name: 'Creative Vibrant', 
-      icon: Wand2, 
-      color: 'violet',
-      atsRating: 94,
-      tag: '94% Modern ATS Accent',
-      category: 'Modern Split',
-      recommendedFor: 'Designers, Product & Growth'
-    },
-    { 
-      id: 'modern-creative', 
-      name: 'Modern Creative Story', 
-      icon: Sparkles, 
-      color: 'brand',
-      atsRating: 93,
-      tag: '93% Portfolio Layout',
-      category: 'Visual Accent',
-      recommendedFor: 'Startups, Agencies & Marketing'
-    },
-    { 
-      id: 'modern-photo', 
-      name: 'Executive Photo Pro', 
-      icon: User, 
-      color: 'brand',
-      atsRating: 92,
-      tag: '92% International CV',
-      category: 'Photo Sidebar',
-      recommendedFor: 'International CVs & Media Roles'
-    },
-  ];
-
   useEffect(() => {
     if (resumeId) {
       const fetchResume = async () => {
+        if (!auth.currentUser || resumeId.startsWith('guest_')) {
+          try {
+            const raw = localStorage.getItem('resusmart_guest_resumes');
+            const list: Resume[] = raw ? JSON.parse(raw) : [];
+            const found = list.find(r => r.id === resumeId);
+            if (found) {
+              setResume({
+                ...found,
+                settings: {
+                  primaryColor: '#2563eb',
+                  fontFamily: 'Inter',
+                  fontSize: 'small',
+                  spacing: 'compact',
+                  margins: 'compact',
+                  projectLayout: 'grid',
+                  ...found.settings,
+                  fitToOnePage: found.settings?.fitToOnePage ?? true,
+                }
+              });
+            }
+          } catch {}
+          setLoading(false);
+          return;
+        }
         const docRef = doc(db, 'resumes', resumeId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data() as Resume;
           const currentViews = data.views || 0;
           await setDoc(docRef, { views: currentViews + 1 }, { merge: true });
-          setResume({ id: docSnap.id, ...data, views: currentViews + 1 });
+          setResume({
+            id: docSnap.id,
+            ...data,
+            views: currentViews + 1,
+            settings: {
+              primaryColor: '#2563eb',
+              fontFamily: 'Inter',
+              fontSize: 'small',
+              spacing: 'compact',
+              margins: 'compact',
+              projectLayout: 'grid',
+              ...data.settings,
+              fitToOnePage: data.settings?.fitToOnePage ?? true,
+            }
+          });
         }
         setLoading(false);
       };
@@ -642,12 +611,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   // Sync print state with browser native print (Ctrl+P or PDF export)
   useEffect(() => {
     const handleBeforePrint = () => {
-      if (resume.settings?.fitToOnePage) {
+      setIsPrinting(true);
+      if (resume.settings?.fitToOnePage !== false) {
         document.body.classList.add('fit-one-page');
       }
     };
     const handleAfterPrint = () => {
       document.body.classList.remove('fit-one-page');
+      setIsPrinting(false);
     };
     window.addEventListener('beforeprint', handleBeforePrint);
     window.addEventListener('afterprint', handleAfterPrint);
@@ -660,18 +631,26 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   const handleDownloadPdf = async () => {
     incrementDownloads();
     const originalTitle = document.title;
-    const candidateName = resume.content?.personalInfo?.fullName?.trim() || 'Resume';
-    document.title = `${candidateName} — ATS Resume`;
-    if (resume.settings?.fitToOnePage) {
+    const candidateName = (resume.content?.personalInfo?.fullName?.trim() || 'Resume').replace(/\s+/g, '_');
+    document.title = `${candidateName}_Resume`;
+    setIsPrinting(true);
+    if (resume.settings?.fitToOnePage !== false) {
       document.body.classList.add('fit-one-page');
+    } else {
+      document.body.classList.remove('fit-one-page');
     }
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        document.body.classList.remove('fit-one-page');
-        document.title = originalTitle;
-      }, 1000);
-    }, 80);
+
+    // Wait two frames so offscreen #print-resume-root flushes latest edits & calibrates 1-page scale identically
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+        setTimeout(() => {
+          document.body.classList.remove('fit-one-page');
+          document.title = originalTitle;
+          setIsPrinting(false);
+        }, 600);
+      });
+    });
   };
 
   const handleDownloadDocx = () => {
@@ -804,22 +783,42 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   };
 
   const handleSave = async () => {
-    if (!auth.currentUser) {
-      alert("Please Login First to Save your Resume! Click the back button and login.");
-      return;
-    }
     setSaving(true);
     try {
-      const id = resumeId || doc(collection(db, 'resumes')).id;
+      if (!auth.currentUser) {
+        const id = resumeId || resume.id || `guest_${Date.now()}`;
+        const guestData: Resume = {
+          ...(resume as Resume),
+          id,
+          userId: 'guest-preview',
+          updatedAt: new Date().toISOString(),
+          version: (resume.version || 0) + 1
+        };
+        const raw = localStorage.getItem('resusmart_guest_resumes');
+        const list: Resume[] = raw ? JSON.parse(raw) : [];
+        const existsIdx = list.findIndex(r => r.id === id);
+        if (existsIdx >= 0) list[existsIdx] = guestData;
+        else list.unshift(guestData);
+        localStorage.setItem('resusmart_guest_resumes', JSON.stringify(list));
+        setResume(guestData);
+        window.dispatchEvent(new Event('resusmart_guest_updated'));
+        setImportSuccessMsg('✅ Resume saved locally in Guest Mode!');
+        setTimeout(() => setImportSuccessMsg(null), 3500);
+        return;
+      }
+
+      const id = resumeId || resume.id || doc(collection(db, 'resumes')).id;
       const data = {
         ...resume,
+        id,
         userId: auth.currentUser.uid,
         updatedAt: new Date().toISOString(),
         version: (resume.version || 0) + 1
       };
       await setDoc(doc(db, 'resumes', id), data);
-      alert("Resume Saved Successfully! ✅");
-      if (!resumeId) onBack(); 
+      setResume(data);
+      setImportSuccessMsg('✅ Resume Saved Successfully!');
+      setTimeout(() => setImportSuccessMsg(null), 3500);
     } catch (error) {
       console.error("Save failed", error);
       alert("Save Failed! Please check your internet connection.");
@@ -939,18 +938,17 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
       )}
       
       {/* Studio Header */}
-      <header className="print:hidden h-14 flex items-center justify-between px-3 md:px-5 shrink-0 z-50 sticky top-0 gap-2 transition-colors duration-300"
+      <header className="print:hidden h-14 flex items-center justify-between px-3 md:px-5 shrink-0 z-50 sticky top-0 gap-2 transition-colors duration-200"
         style={{
-          background: isDark ? 'rgba(11,15,25,0.92)' : 'rgba(255,255,255,0.90)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.14)'}`,
-          boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.35)' : '0 4px 20px rgba(124,58,237,0.05)',
+          background: isDark ? '#0d111b' : '#ffffff',
+          borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.85)'}`,
+          boxShadow: isDark ? '0 2px 14px rgba(0,0,0,0.30)' : '0 2px 10px rgba(15,23,42,0.04)',
         }}>
         <div className="flex items-center gap-2.5 shrink-0">
           <button
             onClick={onBack}
             title="Back to Dashboard"
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all hover:scale-105 ${isDark ? 'text-slate-400 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${isDark ? 'text-slate-400 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
             style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}` }}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -958,7 +956,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
           <div className="hidden sm:flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className={`text-sm font-black tracking-tight leading-none ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Resume Studio</span>
-              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono" style={{ background: 'rgba(124,58,237,0.18)', border: '1px solid rgba(124,58,237,0.30)', color: '#7c3aed' }}>AI</span>
+              <span className="px-1.5 py-0.5 rounded-md text-[8px] font-bold font-mono" style={{ background: 'rgba(124,58,237,0.16)', border: '1px solid rgba(124,58,237,0.28)', color: '#7c3aed' }}>PRO</span>
             </div>
             <input
               value={resume.title}
@@ -975,14 +973,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
           {/* Preview toggle */}
           <button onClick={() => setIsPreviewMode(true)} title="Full Window Preview"
-            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:scale-105 ${isDark ? 'text-slate-300 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
+            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${isDark ? 'text-slate-300 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
             style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}` }}>
             <Eye className="w-3.5 h-3.5 text-violet-500" /><span className="hidden xl:inline">Full Preview</span>
           </button>
 
           {/* Tips */}
           <button onClick={() => setShowSuggestions(!showSuggestions)} title="Writing Tips"
-            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-xl transition-all"
+            className="hidden lg:flex w-8 h-8 items-center justify-center rounded-xl transition-colors"
             style={showSuggestions
               ? { background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.40)', color: '#f59e0b' }
               : { background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(241,245,249,0.90)', border: `1px solid ${isDark ? 'rgba(255,255,255,0.09)' : 'rgba(203,213,225,0.80)'}`, color: isDark ? '#94a3b8' : '#64748b' }}>
@@ -1004,7 +1002,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             }))} 
             title={resume.settings?.fitToOnePage ? "Single-Page Lock Active (Click to switch to multi-page)" : "Fit and Lock Resume to 1 Page"}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:scale-105 shadow-sm border",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-xs border",
               resume.settings?.fitToOnePage
                 ? "bg-emerald-600/20 text-emerald-500 border-emerald-500/40"
                 : isDark ? "bg-white/5 text-slate-400 border-white/10 hover:text-white" : "bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900"
@@ -1019,15 +1017,28 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             type="button"
             onClick={handleLoadAniketResume}
             title="Load Aniket Singh's 1-Page ATS Resume with all 6 projects"
-            className={`hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:scale-105 ${isDark ? 'text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 hover:bg-cyan-900/40' : 'text-cyan-800 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100'}`}
+            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors ${isDark ? 'text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 hover:bg-cyan-900/40' : 'text-cyan-800 bg-cyan-50 border border-cyan-200 hover:bg-cyan-100'}`}
           >
             <FileText className="w-3.5 h-3.5 text-cyan-500" />
-            <span>Sample (Aniket)</span>
+            <span className="hidden xl:inline">Sample (Aniket)</span>
+            <span className="xl:hidden">Sample</span>
+          </button>
+
+          {/* AI Optimize */}
+          <button
+            type="button"
+            onClick={handleOptimizeResume}
+            disabled={isOptimizing}
+            title="Auto-Optimize Entire Resume with AI for ATS"
+            className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 ${isDark ? 'text-amber-300 bg-amber-950/30 border border-amber-700/50 hover:bg-amber-900/40' : 'text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100'}`}
+          >
+            {isOptimizing ? <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" /> : <Wand2 className="w-3.5 h-3.5 text-amber-500" />}
+            <span className="hidden 2xl:inline">{isOptimizing ? 'Optimizing…' : 'ATS Optimize'}</span>
           </button>
 
           {/* ATS Score */}
           <button onClick={() => setShowAtsPanel(!showAtsPanel)} title="ATS Keyword Match Analysis"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:scale-105 shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-xs"
             style={showAtsPanel
               ? { background: 'rgba(124,58,237,0.20)', border: '1px solid rgba(124,58,237,0.40)', color: '#7c3aed' }
               : { background: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}`, color: isDark ? '#cbd5e1' : '#334155' }
@@ -1039,8 +1050,8 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
           {/* AI Magic */}
           <button onClick={() => setIsAiModalOpen(true)} title="AI Auto-Fill with Job Description"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-md"
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', border: '1px solid rgba(255,255,255,0.20)' }}>
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors hover:brightness-110 shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', border: '1px solid rgba(255,255,255,0.16)' }}>
             <Sparkles className="w-3.5 h-3.5" />
             <span className="hidden md:inline">AI Fill</span>
           </button>
@@ -1050,22 +1061,29 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
             accept=".pdf,image/jpeg,image/png,image/webp,image/gif,image/bmp,image/tiff"
             onChange={handleResumeUpload} />
           <button onClick={() => setIsImportModalOpen(true)} disabled={isImporting} title="Import Existing Resume (PDF or Image)"
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all disabled:opacity-50 hover:scale-105 ${isDark ? 'text-slate-300 hover:text-white bg-white/5' : 'text-slate-700 hover:text-slate-900 bg-slate-100'}`}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors disabled:opacity-50 ${isDark ? 'text-slate-300 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
             style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}` }}>
             {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-500" /> : <Upload className="w-3.5 h-3.5" />}
           </button>
 
           {/* Save */}
           <button onClick={handleSave} disabled={saving} title="Save Changes"
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all disabled:opacity-50 hover:scale-105 ${isDark ? 'text-slate-300 hover:text-white bg-white/5' : 'text-slate-700 hover:text-slate-900 bg-slate-100'}`}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors disabled:opacity-50 ${isDark ? 'text-slate-300 hover:text-white bg-white/5 hover:bg-white/10' : 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200'}`}
             style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.80)'}` }}>
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" /> : <Save className="w-3.5 h-3.5" />}
           </button>
 
+          {/* Export Word */}
+          <button onClick={handleDownloadDocx} title="Download Editable Word (.doc)"
+            className={`hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${isDark ? 'text-blue-300 bg-blue-950/40 border border-blue-800/50 hover:bg-blue-900/40' : 'text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100'}`}>
+            <FileText className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">DOC</span>
+          </button>
+
           {/* Export PDF */}
           <button onClick={handleDownloadPdf} title={resume.settings?.fitToOnePage ? "Download Single-Page PDF" : "Download PDF"}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-md"
-            style={{ background: 'linear-gradient(135deg, #059669 0%, #0891b2 100%)', border: '1px solid rgba(255,255,255,0.20)' }}>
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white transition-colors hover:brightness-110 shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)', border: '1px solid rgba(255,255,255,0.16)' }}>
             <Download className="w-3.5 h-3.5" />
             <span>{resume.settings?.fitToOnePage ? "1-Page PDF" : "PDF"}</span>
           </button>
@@ -1078,9 +1096,8 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
         <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 flex justify-center z-999 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-1.5 p-1.5 rounded-2xl shadow-2xl"
             style={{
-              background: isDark ? 'rgba(11,15,25,0.95)' : 'rgba(255,255,255,0.95)',
+              background: isDark ? '#0d111b' : '#ffffff',
               border: `1px solid ${isDark ? 'rgba(255,255,255,0.12)' : 'rgba(124,58,237,0.20)'}`,
-              backdropFilter: 'blur(20px)'
             }}>
             {(['edit', 'preview', 'ats'] as const).map((v) => (
               <button
@@ -1140,9 +1157,8 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   </div>
                   <span className={`text-xs font-bold ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : isDark ? 'text-slate-400' : 'text-slate-600'}`}>{label}</span>
                   {isActive && (
-                    <motion.div
-                      layoutId="editor-active-dot"
-                      className="ml-auto w-1.5 h-1.5 rounded-full"
+                    <span
+                      className="ml-auto w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ background: color[2] }}
                     />
                   )}
@@ -1159,12 +1175,9 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                 <span className="text-[11px] font-mono font-bold text-violet-500">{calculateProfileStrength()}%</span>
               </div>
               <div className="w-full rounded-full h-1.5 overflow-hidden" style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)' }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${calculateProfileStrength()}%` }}
-                  transition={{ type: 'spring', stiffness: 50, damping: 20 }}
-                  className="h-full rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #7c3aed, #4f46e5, #0ea5e9)' }}
+                <div
+                  className="h-full rounded-full transition-[width] duration-300 ease-out"
+                  style={{ width: `${calculateProfileStrength()}%`, background: 'linear-gradient(90deg, #7c3aed, #4f46e5, #0ea5e9)' }}
                 />
               </div>
             </div>
@@ -1172,21 +1185,12 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
         </div>
 
         {/* Edit Area */}
-        {/* Edit Area */}
         <div className={cn(
-          "print:hidden overflow-y-auto p-4 md:p-5 lg:p-6 transition-all duration-300 pb-32 lg:pb-8 flex-1 min-w-0",
+          "print:hidden overflow-y-auto p-4 md:p-5 lg:p-6 pb-32 lg:pb-8 flex-1 min-w-0",
           isPreviewMode ? "hidden" : (mobileView === 'edit' ? "block" : "hidden lg:block")
         )}
           style={{ background: isDark ? '#080b12' : '#f8fafc' }}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.18 }}
-              className="max-w-2xl mx-auto space-y-5"
-            >
+          <div key={activeSection} className="max-w-2xl mx-auto space-y-5">
               
               {/* 🛡️ Real-time ATS Guidance Banner (Shown on filling tabs) */}
               {activeSection !== 'templates' && activeSection !== 'settings' && (
@@ -1209,13 +1213,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       </div>
                     </div>
 
-                    {/* Quick switch to top 100% ATS templates */}
+                    {/* Quick switch to 100% ATS templates */}
                     <div className="flex items-center gap-1.5 self-start sm:self-auto flex-wrap">
-                      <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Top ATS:</span>
+                      <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>100% ATS:</span>
                       {[
-                        { id: 'classic-chronological', label: 'Classic (100%)' },
-                        { id: 'modern-professional', label: 'Modern (99%)' },
-                        { id: 'minimalist-clean', label: 'Minimal (100%)' }
+                        { id: 'classic-chronological', label: 'Classic' },
+                        { id: 'ats-harvard-ivy', label: 'Harvard Ivy' },
+                        { id: 'ats-jake-clean', label: 'SWE Clean' },
+                        { id: 'minimalist-clean', label: 'Minimal' }
                       ].map((t) => (
                         <button
                           key={t.id}
@@ -1223,7 +1228,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                           onClick={() => handleTemplateSelect(t.id)}
                           className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all border ${resume.templateType === t.id ? 'bg-indigo-600 text-white border-indigo-500 shadow-xs' : isDark ? 'bg-slate-900 text-slate-300 border-slate-800 hover:border-indigo-500/40' : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-400'}`}
                         >
-                          {t.label}
+                          {t.label} {resume.templateType === t.id ? '✓' : ''}
                         </button>
                       ))}
                     </div>
@@ -1232,95 +1237,121 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
               )}
 
               {activeSection === 'templates' && (
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
-                  }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{fontFamily:'Outfit,Inter,sans-serif'}}>ATS-Optimized Templates</h3>
-                    <p className={`text-xs font-mono mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Engineered for 99%+ parsing accuracy with enterprise applicant tracking systems</p>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                      <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{fontFamily:'Outfit,Inter,sans-serif'}}>
+                        ATS-Optimized Templates ({templates.length})
+                      </h3>
+                      <p className={`text-xs font-mono mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        All templates support 1-Page Auto-Fit, Width Expansion & 2-Column Project Grids
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { id: 'all', label: `All (${templates.length})` },
+                        { id: 'ats-100', label: '100% ATS Star' },
+                        { id: 'split', label: 'Split Sidebar' },
+                        { id: 'creative', label: 'Executive & Visual' },
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setTemplateFilter(tab.id as any)}
+                          className={cn(
+                            'px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold transition-all border',
+                            templateFilter === tab.id
+                              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                              : isDark ? 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white' : 'bg-white text-slate-600 border-slate-200 hover:text-slate-900'
+                          )}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   
                   {/* ATS Info Card */}
-                  <div className={`p-4 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-emerald-950/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
+                  <div className={`p-3.5 rounded-2xl border flex items-center gap-3 ${isDark ? 'bg-emerald-950/20 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>
                     <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
                     <p className="text-xs leading-relaxed">
-                      All templates utilize standard semantic heading structures, zero non-standard parsing tables, and vector typography guaranteed to parse cleanly into Taleo, Workday, Greenhouse & Lever.
+                      Selected layout updates your live resume & PDF download instantaneously — every color palette, font, spacing, margin & 2-column grid control works across 100% of templates.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {templates.map((t) => (
-                      <motion.button
-                        key={t.id}
-                        variants={{
-                          hidden: { opacity: 0, y: 15 },
-                          visible: { opacity: 1, y: 0 }
-                        }}
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleTemplateSelect(t.id)}
-                        className={cn(
-                          "p-4 rounded-2xl border-2 text-left transition-all duration-300 group relative flex flex-col justify-between overflow-hidden",
-                          resume.templateType === t.id 
-                            ? (isDark ? "border-indigo-500 bg-slate-900 shadow-2xl shadow-indigo-500/20" : "border-indigo-600 bg-white shadow-lg ring-2 ring-indigo-500/20") 
-                            : (isDark ? "border-slate-800 bg-slate-900/60 hover:border-indigo-500/40 hover:bg-slate-900 hover:shadow-xl" : "border-slate-200 bg-white hover:border-indigo-400 hover:shadow-md")
-                        )}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:rotate-6 shadow-md",
-                              t.color === 'brand' ? "bg-indigo-600 text-white shadow-indigo-600/30" :
-                              t.color === 'emerald' ? "bg-emerald-600 text-white shadow-emerald-600/30" :
-                              t.color === 'violet' ? "bg-purple-600 text-white shadow-purple-600/30" :
-                              t.color === 'indigo' ? "bg-cyan-600 text-white shadow-cyan-600/30" :
-                              "bg-slate-700 text-white"
-                            )}>
-                              <t.icon className="w-5 h-5" />
-                            </div>
-                            <span className={cn(
-                              "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border",
-                              t.atsRating >= 99 
-                                ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
-                                : t.atsRating >= 95
-                                ? "bg-indigo-500/15 text-indigo-500 border-indigo-500/30"
-                                : "bg-purple-500/15 text-purple-500 border-purple-500/30"
-                            )}>
-                              ★ {t.atsRating}% ATS
-                            </span>
-                          </div>
+                    {templates
+                      .filter(t => templateFilter === 'all' || t.filterGroup === templateFilter)
+                      .map((t) => {
+                        const isSelected = resume.templateType === t.id;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => handleTemplateSelect(t.id)}
+                            className={cn(
+                              "p-4 rounded-2xl border-2 text-left transition-colors duration-150 group relative flex flex-col justify-between overflow-hidden hover:-translate-y-0.5",
+                              isSelected
+                                ? (isDark ? "border-emerald-500 bg-slate-900 shadow-lg ring-2 ring-emerald-500/25" : "border-indigo-600 bg-white shadow-md ring-2 ring-indigo-500/20")
+                                : (isDark ? "border-slate-800 bg-slate-900/60 hover:border-indigo-500/50 hover:bg-slate-900" : "border-slate-200 bg-white hover:border-indigo-400 hover:shadow-sm")
+                            )}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-2.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm",
+                                    t.color === 'brand' ? "bg-indigo-600 text-white" :
+                                    t.color === 'emerald' ? "bg-emerald-600 text-white" :
+                                    t.color === 'violet' ? "bg-purple-600 text-white" :
+                                    t.color === 'indigo' ? "bg-cyan-600 text-white" :
+                                    "bg-slate-700 text-white"
+                                  )}>
+                                    <t.icon className="w-4 h-4" />
+                                  </div>
+                                  <span className={cn(
+                                    "px-2 py-0.5 rounded-full text-[9.5px] font-mono font-bold border",
+                                    t.atsRating === 100
+                                      ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                                      : t.atsRating >= 98
+                                      ? "bg-indigo-500/15 text-indigo-500 border-indigo-500/30"
+                                      : "bg-purple-500/15 text-purple-500 border-purple-500/30"
+                                  )}>
+                                    ★ {t.atsRating}% ATS
+                                  </span>
+                                </div>
+                                {isSelected && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-500 text-white shadow-sm shrink-0">
+                                    100% SELECTED ✓
+                                  </span>
+                                )}
+                              </div>
 
-                          <h3 className={`font-black text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{t.name}</h3>
-                          <p className={`text-[11px] font-medium mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t.category}</p>
-                          <p className="text-[10px] font-mono text-indigo-500 mt-1 line-clamp-1">Target: {t.recommendedFor}</p>
-                        </div>
-                        
-                        <div className="mt-3 pt-2.5 border-t flex items-center justify-between" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
-                          <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${resume.templateType === t.id ? 'text-indigo-500 font-black' : isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            {resume.templateType === t.id ? 'Active Layout ✓' : 'Click to Apply'}
-                          </span>
-                          {resume.templateType === t.id && (
-                            <CheckCircle2 className="w-4 h-4 fill-indigo-600 text-white" />
-                          )}
-                        </div>
-                      </motion.button>
-                    ))}
+                              {/* Interactive Color-Synced Mini Wireframe Thumbnail */}
+                              <div className="mb-3">
+                                <TemplateThumbnail id={t.id} accent={resume.settings?.primaryColor || '#2563eb'} />
+                              </div>
+
+                              <h3 className={`font-black text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>{t.name}</h3>
+                              <p className={`text-[11px] font-medium mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t.category}</p>
+                              <p className="text-[10px] font-mono text-indigo-500 mt-1 line-clamp-1">Target: {t.recommendedFor}</p>
+                            </div>
+                            
+                            <div className="mt-3 pt-2.5 border-t flex items-center justify-between" style={{ borderColor: isDark ? 'rgba(255,255,255,0.07)' : '#f1f5f9' }}>
+                              <span className={`text-[9.5px] font-mono font-bold uppercase tracking-wider ${isSelected ? 'text-emerald-500 font-black' : isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                {isSelected ? 'Currently Active Layout ✓' : 'Click to Apply Layout'}
+                              </span>
+                              <ChevronRight className={`w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 ${isSelected ? 'text-emerald-500' : 'text-slate-400'}`} />
+                            </div>
+                          </button>
+                        );
+                      })}
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'personal' && (
-                <motion.div
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{fontFamily:'Outfit,Inter,sans-serif'}}>Personal Info</h3>
                     <p className={`text-xs font-mono mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>How recruiters and ATS algorithms will reach you</p>
@@ -1375,9 +1406,21 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                           </button>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Profile Photo</p>
-                        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Add a crisp headshot to boost recall and impact. Hover the photo to upload.</p>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Profile Photo</p>
+                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Add a crisp headshot (auto-cropped to circle) for Photo Pro layouts.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsSocialSyncOpen(true)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all hover:scale-105 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:border-indigo-500' : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-indigo-400'}`}
+                          >
+                            <Github className="w-3.5 h-3.5" />
+                            <span>Sync GitHub / LinkedIn</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1394,6 +1437,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       <Input label="Phone Number" value={resume.content?.personalInfo.phone} onChange={v => updateContent('personalInfo.phone', v)} placeholder="+91 99999 99999" />
                       <Input label="Location" value={resume.content?.personalInfo.location} onChange={v => updateContent('personalInfo.location', v)} placeholder="Mumbai, India" suggestions={['Remote / Global', 'Mumbai, India', 'Bangalore, India', 'Delhi, India', 'Hyderabad, India', 'Pune, India', 'San Francisco, CA', 'London, UK', 'Singapore', 'Berlin, Germany']} />
                       <Input label="LinkedIn Profile" value={resume.content?.personalInfo.linkedin} onChange={v => updateContent('personalInfo.linkedin', v)} placeholder="linkedin.com/in/yourname" />
+                      <Input label="GitHub Profile" value={resume.content?.personalInfo.github} onChange={v => updateContent('personalInfo.github', v)} placeholder="github.com/yourusername" />
                       <Input label="Portfolio / Website" value={resume.content?.personalInfo.website} onChange={v => updateContent('personalInfo.website', v)} placeholder="yourportfolio.com" />
                     </div>
                   </div>
@@ -1517,36 +1561,44 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       {/* Permanent Address */}
                       <div className="space-y-1.5">
                         <label className={`block text-[10px] font-mono font-semibold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Permanent Address</label>
-                        <textarea
+                        <AutoTextarea
                           value={resume.content?.personalInfo.permanentAddress || ''}
-                          onChange={e => updateContent('personalInfo.permanentAddress', e.target.value)}
+                          onChange={val => updateContent('personalInfo.permanentAddress', val)}
                           placeholder="e.g. 123, Gandhi Nagar, Mumbai - 400001, Maharashtra"
-                          className={`w-full h-16 text-xs font-medium outline-none transition-all resize-none leading-relaxed rounded-xl px-3.5 py-2.5 border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
+                          className={`w-full h-16 text-xs font-medium outline-none transition-colors resize-none leading-relaxed rounded-xl px-3.5 py-2.5 border ${isDark ? 'bg-slate-950/70 border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
                         />
                       </div>
                     </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'summary' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Professional Summary</h3>
+                      <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit,Inter,sans-serif' }}>Professional Summary</h3>
                       <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hook recruiters and ATS parsers in 30 seconds</p>
                     </div>
-                    <button
-                      onClick={handleGenerateSummary}
-                      disabled={generatingSummary}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 border border-white/20"
-                    >
-                      {generatingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                      <span>AI Magic Write</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleImproveGrammar}
+                        disabled={improvingGrammar || !resume.content?.summary}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-105 active:scale-95 disabled:opacity-40 ${isDark ? 'bg-slate-900 border-slate-700 text-emerald-400 hover:border-emerald-500/60' : 'bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50 shadow-xs'}`}
+                      >
+                        {improvingGrammar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                        <span>Improve Tone</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGenerateSummary}
+                        disabled={generatingSummary}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-50 border border-white/20"
+                      >
+                        {generatingSummary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        <span>AI Magic Write</span>
+                      </button>
+                    </div>
                   </div>
                   <ProTip>Keep your summary under 4 sentences. Highlight your core domain, years of expertise, and highest ROI accomplishment.</ProTip>
                   
@@ -1586,22 +1638,18 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   </div>
 
                   <div className="relative group">
-                    <textarea 
-                      value={resume.content?.summary}
-                      onChange={e => updateContent('summary', e.target.value)}
+                    <AutoTextarea 
+                      value={resume.content?.summary || ''}
+                      onChange={val => updateContent('summary', val)}
                       placeholder="High-impact Software Architect with 8+ years of engineering scalable microservices, leading AI automation pipelines, and improving user performance by 40%..."
-                      className={`w-full h-44 rounded-2xl p-4 text-sm font-medium outline-none transition-all resize-none leading-relaxed ${isDark ? 'bg-slate-900/80 border border-slate-800 text-slate-100 placeholder-slate-600 focus:bg-slate-950 focus:border-indigo-500' : 'bg-white border border-slate-200 text-slate-900 placeholder-slate-400 shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10'}`}
+                      className={`w-full h-44 rounded-2xl p-4 text-sm font-medium outline-none transition-colors resize-none leading-relaxed ${isDark ? 'bg-slate-900/80 border border-slate-800 text-slate-100 placeholder-slate-600 focus:bg-slate-950 focus:border-indigo-500' : 'bg-white border border-slate-200 text-slate-900 placeholder-slate-400 shadow-sm focus:border-indigo-500'}`}
                     />
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'experience' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Work Experience</h3>
@@ -1618,12 +1666,9 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   
                   <div className="space-y-4">
                     {(resume.content?.experience || []).map((exp, idx) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
+                      <div 
                         key={exp.id} 
-                        className={`p-5 rounded-2xl border relative group transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
+                        className={`p-5 rounded-2xl border relative group ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
                       >
                         <button 
                           onClick={() => {
@@ -1684,34 +1729,60 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
                         {/* STAR Achievement Starters */}
                         <div className="mt-4 space-y-2">
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Key Achievements (STAR Method)</p>
-                          </div>
-                          {(exp.description || []).map((bullet, bIdx) => (
-                            <div key={bIdx} className="flex gap-2 group/bullet">
-                              <input 
-                                value={bullet}
-                                onChange={e => {
-                                  const newExp = [...(resume.content?.experience || [])];
-                                  newExp[idx].description[bIdx] = e.target.value;
-                                  updateContent('experience', newExp);
-                                }}
-                                className={`flex-1 rounded-xl px-3.5 py-2 text-sm font-medium outline-none transition-all ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
-                                placeholder="Architected a caching layer that reduced latency by 45%..."
-                              />
-                              <button 
-                                onClick={() => {
-                                  const newExp = [...(resume.content?.experience || [])];
-                                  newExp[idx].description = newExp[idx].description.filter((_, i) => i !== bIdx);
-                                  updateContent('experience', newExp);
-                                }}
-                                className="w-8 flex items-center justify-center text-slate-400 hover:text-red-500 rounded-lg transition-all"
-                                title="Remove bullet"
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[9px] font-mono uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Industry:</span>
+                              <select
+                                value={targetIndustry}
+                                onChange={e => setTargetIndustry(e.target.value)}
+                                className={`text-[10px] font-mono font-bold rounded-lg px-2 py-0.5 border outline-none ${isDark ? 'bg-slate-950 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                               >
-                                <Minus className="w-3.5 h-3.5" />
-                              </button>
+                                {['Technology', 'AI / ML', 'Finance / FinTech', 'Healthcare', 'Product Management', 'E-Commerce'].map(ind => (
+                                  <option key={ind} value={ind}>{ind}</option>
+                                ))}
+                              </select>
                             </div>
-                          ))}
+                          </div>
+                          {(exp.description || []).map((bullet, bIdx) => {
+                            const isEnhancingThis = enhancingBullet === `${exp.id}-${bIdx}`;
+                            return (
+                              <div key={bIdx} className="flex gap-1.5 group/bullet items-center">
+                                <AutoRawInput 
+                                  value={bullet}
+                                  onChange={val => {
+                                    const newExp = [...(resume.content?.experience || [])];
+                                    newExp[idx].description[bIdx] = val;
+                                    updateContent('experience', newExp);
+                                  }}
+                                  className={`flex-1 min-w-0 rounded-xl px-3.5 py-2 text-sm font-medium outline-none transition-colors ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
+                                  placeholder="Architected a caching layer that reduced latency by 45%..."
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleEnhance(exp.id, bIdx)}
+                                  disabled={isEnhancingThis || !bullet.trim()}
+                                  title="Rewrite bullet with AI metrics & STAR framing"
+                                  className={`px-2.5 py-2 rounded-xl text-[10px] font-mono font-bold flex items-center gap-1 shrink-0 border transition-all disabled:opacity-40 ${isDark ? 'bg-violet-500/15 border-violet-500/30 text-violet-300 hover:bg-violet-500/25' : 'bg-violet-50 border-violet-200 text-violet-700 hover:bg-violet-100'}`}
+                                >
+                                  {isEnhancingThis ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                  <span className="hidden sm:inline">Enhance</span>
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    const newExp = [...(resume.content?.experience || [])];
+                                    newExp[idx].description = newExp[idx].description.filter((_, i) => i !== bIdx);
+                                    updateContent('experience', newExp);
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 rounded-lg transition-all shrink-0"
+                                  title="Remove bullet"
+                                >
+                                  <Minus className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
                           <button 
                             onClick={() => {
                               const newExp = [...(resume.content?.experience || [])];
@@ -1745,18 +1816,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             </div>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'education' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Education</h3>
@@ -1776,12 +1843,9 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   
                   <div className="space-y-4">
                     {(resume.content?.education || []).map((edu, idx) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
+                      <div 
                         key={edu.id} 
-                        className={`p-5 rounded-2xl border relative group transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
+                        className={`p-5 rounded-2xl border relative group ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
                       >
                         <button 
                           onClick={() => {
@@ -1826,18 +1890,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             updateContent('education', newEdu);
                           }} placeholder="e.g. 9.2 CGPA or 85%" suggestions={['CGPA: 9.5 / 10.0', 'CGPA: 9.0 / 10.0', 'CGPA: 8.5 / 10.0', 'GPA: 3.9 / 4.0 (Top 5% Merit)', 'First Class with Distinction', '88% Aggregate']} />
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'skills' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Skills & Competencies</h3>
                     <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hard technical stacks and domain proficiencies</p>
@@ -1891,21 +1951,19 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   <div className={`p-5 rounded-2xl border transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                     <div className="flex flex-wrap gap-2 items-center">
                       {(resume.content?.skills || []).map((skill, idx) => (
-                        <motion.div 
+                        <div 
                           key={idx}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
                           className="flex items-center gap-1.5"
                         >
                           <div className="relative group/skill">
-                            <input 
+                            <AutoRawInput 
                               value={skill}
-                              onChange={e => {
+                              onChange={val => {
                                 const newSkills = [...(resume.content?.skills || [])];
-                                newSkills[idx] = e.target.value;
+                                newSkills[idx] = val;
                                 updateContent('skills', newSkills);
                               }}
-                              className={`rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-30 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
+                              className={`rounded-xl px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-colors pr-7 min-w-30 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
                             />
                             <button 
                               onClick={() => {
@@ -1917,23 +1975,37 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                               <Minus className="w-3 h-3" />
                             </button>
                           </div>
-                        </motion.div>
+                        </div>
                       ))}
                       
-                      <input 
-                        placeholder="+ ADD SKILL…"
-                        list="skills-suggestions"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const val = (e.target as HTMLInputElement).value;
-                            if (val) {
-                              updateContent('skills', [...(resume.content?.skills || []), val]);
-                              (e.target as HTMLInputElement).value = '';
+                      <div className="flex items-center gap-1.5">
+                        <input 
+                          value={newSkillInput}
+                          onChange={e => setNewSkillInput(e.target.value)}
+                          placeholder="+ ADD SKILL…"
+                          list="skills-suggestions"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && newSkillInput.trim()) {
+                              e.preventDefault();
+                              updateContent('skills', [...(resume.content?.skills || []), newSkillInput.trim()]);
+                              setNewSkillInput('');
                             }
-                          }
-                        }}
-                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-35 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
-                      />
+                          }}
+                          className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-35 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-200 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-700 focus:text-indigo-600 focus:border-indigo-500'}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newSkillInput.trim()) {
+                              updateContent('skills', [...(resume.content?.skills || []), newSkillInput.trim()]);
+                              setNewSkillInput('');
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-colors shrink-0"
+                        >
+                          Add
+                        </button>
+                      </div>
 
                       <datalist id="skills-suggestions">
                         {['React', 'JavaScript', 'TypeScript', 'Node.js', 'Python', 'Java', 'C++', 'SQL', 'NoSQL', 'AWS', 'Docker', 'Kubernetes', 'Machine Learning', 'Data Analysis', 'Agile', 'UI/UX Design', 'Figma', 'Git', 'Tailwind CSS', 'Redux', 'Next.js', 'FastAPI', 'Go', 'PostgreSQL', 'Redis', 'GraphQL'].map((s, i) => (
@@ -1942,15 +2014,11 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       </datalist>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'projects' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Projects</h3>
@@ -1996,12 +2064,9 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   
                   <div className="space-y-4">
                     {(resume.content?.projects || []).map((project, idx) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
+                      <div 
                         key={project.id} 
-                        className={`p-5 rounded-2xl border relative group transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
+                        className={`p-5 rounded-2xl border relative group ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
                       >
                         <button 
                           onClick={() => {
@@ -2027,15 +2092,15 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                         </div>
                         <div className="mt-3 space-y-1.5">
                           <label className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Description & Impact</label>
-                          <textarea 
-                            value={project.description}
-                            onChange={e => {
+                          <AutoTextarea 
+                            value={project.description || ''}
+                            onChange={val => {
                               const newProjects = [...(resume.content?.projects || [])];
-                              newProjects[idx].description = e.target.value;
+                              newProjects[idx].description = val;
                               updateContent('projects', newProjects);
                             }}
-                            className={`w-full h-20 rounded-xl p-3 text-sm font-medium outline-none transition-all resize-none leading-relaxed ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
-                            placeholder="Architected a 60fps resume studio using React and Framer Motion..."
+                            className={`w-full h-20 rounded-xl p-3 text-sm font-medium outline-none transition-colors resize-none leading-relaxed ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
+                            placeholder="Architected a 60fps resume studio using React and TypeScript..."
                           />
                         </div>
 
@@ -2053,16 +2118,16 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                           </div>
                           {(project.keyFeatures || []).map((feat, fIdx) => (
                             <div key={fIdx} className="flex gap-2 group/feat">
-                              <input 
+                              <AutoRawInput 
                                 value={feat}
-                                onChange={e => {
+                                onChange={val => {
                                   const newProjects = [...(resume.content?.projects || [])];
                                   const arr = [...(newProjects[idx].keyFeatures || [])];
-                                  arr[fIdx] = e.target.value;
+                                  arr[fIdx] = val;
                                   newProjects[idx].keyFeatures = arr;
                                   updateContent('projects', newProjects);
                                 }}
-                                className={`flex-1 rounded-xl px-3.5 py-2 text-sm font-medium outline-none transition-all ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
+                                className={`flex-1 rounded-xl px-3.5 py-2 text-sm font-medium outline-none transition-colors ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
                                 placeholder="e.g. Implemented real-time synchronization handling 10,000+ operations/sec..."
                               />
                               <button 
@@ -2090,17 +2155,26 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                         </div>
 
                         <div className="mt-3 space-y-1">
-                          <label className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Technologies Used</label>
+                          <label className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Technologies Used (comma-separated)</label>
                           <input 
-                            value={project.technologies.join(', ')}
+                            value={techDrafts[project.id] ?? project.technologies.join(', ')}
                             onChange={e => {
+                              const raw = e.target.value;
+                              setTechDrafts(prev => ({ ...prev, [project.id]: raw }));
                               const newProjects = [...(resume.content?.projects || [])];
-                              newProjects[idx].technologies = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                              newProjects[idx].technologies = raw.split(',').map(s => s.trim()).filter(Boolean);
                               updateContent('projects', newProjects);
+                            }}
+                            onBlur={() => {
+                              setTechDrafts(prev => {
+                                const copy = { ...prev };
+                                delete copy[project.id];
+                                return copy;
+                              });
                             }}
                             list="tech-suggestions"
                             placeholder="React, TypeScript, Node.js, AWS..."
-                            className={`w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold uppercase tracking-wider outline-none transition-all ${isDark ? 'bg-slate-950/70 border border-slate-800 text-indigo-400 placeholder-slate-600' : 'bg-slate-50 border border-slate-200 text-indigo-600 placeholder-slate-400 font-bold'}`}
+                            className={`w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold tracking-wider outline-none transition-all ${isDark ? 'bg-slate-950/70 border border-slate-800 text-indigo-400 placeholder-slate-600' : 'bg-slate-50 border border-slate-200 text-indigo-600 placeholder-slate-400 font-bold'}`}
                           />
                           <datalist id="tech-suggestions">
                             {['React', 'Node.js', 'Firebase', 'MongoDB', 'PostgreSQL', 'Python', 'Django', 'Flask', 'Next.js', 'Tailwind CSS', 'Express.js', 'AWS', 'Docker', 'Google Cloud', 'Azure', 'Unity', 'Swift', 'Kotlin', 'Flutter', 'GraphQL', 'Redis'].map((t, i) => (
@@ -2108,18 +2182,14 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             ))}
                           </datalist>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'certifications' && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Certifications</h3>
                     <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Formal industry badges and verified credentials</p>
@@ -2153,21 +2223,19 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   <div className={`p-5 rounded-2xl border transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                     <div className="flex flex-wrap gap-2 items-center">
                       {(resume.content?.certifications || []).map((cert, idx) => (
-                        <motion.div 
+                        <div 
                           key={idx}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
                           className="flex items-center gap-1.5"
                         >
                           <div className="relative group/cert">
-                            <input 
+                            <AutoRawInput 
                               value={cert}
-                              onChange={e => {
+                              onChange={val => {
                                 const newCerts = [...(resume.content?.certifications || [])];
-                                newCerts[idx] = e.target.value;
+                                newCerts[idx] = val;
                                 updateContent('certifications', newCerts);
                               }}
-                              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all pr-7 min-w-40 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
+                              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-colors pr-7 min-w-40 ${isDark ? 'bg-slate-950 border border-slate-800 text-slate-100 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-800 focus:border-indigo-500'}`}
                             />
                             <button 
                               onClick={() => {
@@ -2179,33 +2247,43 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                               <Minus className="w-3 h-3" />
                             </button>
                           </div>
-                        </motion.div>
+                        </div>
                       ))}
                       
-                      <input 
-                        placeholder="+ ADD CERTIFICATION…"
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            const val = (e.target as HTMLInputElement).value;
-                            if (val) {
-                              updateContent('certifications', [...(resume.content?.certifications || []), val]);
-                              (e.target as HTMLInputElement).value = '';
+                      <div className="flex items-center gap-1.5">
+                        <input 
+                          value={newCertInput}
+                          onChange={e => setNewCertInput(e.target.value)}
+                          placeholder="+ ADD CERTIFICATION…"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && newCertInput.trim()) {
+                              e.preventDefault();
+                              updateContent('certifications', [...(resume.content?.certifications || []), newCertInput.trim()]);
+                              setNewCertInput('');
                             }
-                          }
-                        }}
-                        className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-42.5 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-400 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-600 focus:text-indigo-600 focus:border-indigo-500'}`}
-                      />
+                          }}
+                          className={`border border-dashed rounded-xl px-4 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition-all min-w-42.5 ${isDark ? 'bg-slate-950 border-slate-700 text-slate-200 focus:text-indigo-300 focus:border-indigo-500' : 'bg-white border-slate-300 text-slate-700 focus:text-indigo-600 focus:border-indigo-500'}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (newCertInput.trim()) {
+                              updateContent('certifications', [...(resume.content?.certifications || []), newCertInput.trim()]);
+                              setNewCertInput('');
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-bold hover:bg-amber-500 transition-colors shrink-0"
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'declaration' && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="space-y-4"
-                >
+                <div className="space-y-4">
                   <div>
                     <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Declaration & Sign-off</h3>
                     <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Formal confirmation of accuracy for placements & PSU applications</p>
@@ -2230,12 +2308,12 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     </div>
                   </div>
                   
-                  <div className={`p-5 rounded-2xl border space-y-4 transition-all ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
-                    <textarea 
-                      value={resume.content?.declaration}
-                      onChange={e => updateContent('declaration', e.target.value)}
+                  <div className={`p-5 rounded-2xl border space-y-4 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                    <AutoTextarea 
+                      value={resume.content?.declaration || ''}
+                      onChange={val => updateContent('declaration', val)}
                       placeholder="I hereby declare that the information provided above is true to the best of my knowledge and belief."
-                      className={`w-full h-24 rounded-xl p-3 text-sm font-medium italic outline-none transition-all resize-none leading-relaxed text-center ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
+                      className={`w-full h-24 rounded-xl p-3 text-sm font-medium italic outline-none transition-colors resize-none leading-relaxed text-center ${isDark ? 'bg-slate-950/70 border border-slate-800 text-slate-100 placeholder-slate-600 focus:border-indigo-500' : 'bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-indigo-500'}`}
                     />
 
                     <div className={`pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-3 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -2253,15 +2331,11 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       />
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {activeSection === 'settings' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4 pb-10"
-                >
+                <div className="space-y-4 pb-10">
                   <div>
                     <h3 className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif' }}>Design & Typography</h3>
                     <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Customize accent color, typography, scaling & density</p>
@@ -2371,7 +2445,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             <div>
                               <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>One-Page Resume Mode</p>
                               <p className={`text-[10px] font-mono ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                {resume.settings?.fitToOnePage ? '✓ Strict 1-Page constraints active' : 'Lock resume height to exactly 1 A4 page'}
+                                {resume.settings?.fitToOnePage ? '✓ 1-Page Auto-Fit scaling active (zero clipping)' : 'Fit & scale resume to 1 clean A4 page'}
                               </p>
                             </div>
                           </div>
@@ -2439,7 +2513,7 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                             onClick={() => setResume(prev => ({ ...prev, settings: { ...prev.settings, margins: m.id as any } }))}
                             className={cn(
                               "p-2 rounded-xl border text-left transition-all",
-                              (resume.settings?.margins === m.id || (!resume.settings?.margins && m.id === 'compact'))
+                              (resume.settings?.margins === m.id || (!resume.settings?.margins && m.id === (resume.settings?.fitToOnePage ? 'compact' : 'normal')))
                                 ? "border-indigo-500 bg-indigo-500/15 text-indigo-500 font-bold"
                                 : isDark ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-700"
                             )}
@@ -2548,195 +2622,163 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               )}
               
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
 
         {/* ── LIVE PREVIEW PANEL ── */}
-        <AnimatePresence>
-          {(!isPreviewMode && showLivePreview && !showAtsPanel) && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className={cn(
-                "flex-col overflow-hidden shrink-0 transition-colors duration-300",
-                mobileView === 'preview' ? "fixed inset-0 z-90 w-full h-full pb-20 flex" : "hidden lg:flex lg:w-95 xl:w-110 2xl:w-120",
-                "print:flex print:static print:bg-white print:w-full print:h-auto print:overflow-visible"
-              )}
+        {(!isPreviewMode && showLivePreview && (mobileView === 'preview' || !showAtsPanel)) && (
+          <div
+            className={cn(
+              "print:hidden flex-col overflow-hidden shrink-0",
+              mobileView === 'preview'
+                ? "fixed inset-0 z-90 w-full h-full pb-20 flex"
+                : !showAtsPanel
+                ? "hidden lg:flex lg:w-95 xl:w-110 2xl:w-120"
+                : "hidden"
+            )}
+            style={{
+              background: isDark ? '#070a12' : '#f1f5f9',
+              borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.90)'}`
+            }}
+          >
+            {/* Preview toolbar */}
+            <div className="print:hidden h-11 px-3.5 flex items-center justify-between shrink-0"
               style={{
-                background: isDark ? '#070a12' : '#f1f5f9',
-                borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.90)'}`
-              }}
-            >
-              {/* Preview toolbar */}
-              <div className="print:hidden h-11 px-3.5 flex items-center justify-between shrink-0 transition-colors duration-300"
-                style={{
-                  background: isDark ? 'rgba(11,15,25,0.92)' : 'rgba(255,255,255,0.90)',
-                  borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
-                }}>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Live Preview</span>
-                  {resume.settings?.fitToOnePage && (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
-                      1-Page
-                    </span>
+                background: isDark ? '#0b0f19' : '#ffffff',
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
+              }}>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className={`text-[11px] font-mono font-bold uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Live Preview</span>
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded text-[9px] font-bold font-mono border",
+                  resume.settings?.fitToOnePage
+                    ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                    : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                )}>
+                  {resume.settings?.fitToOnePage
+                    ? (liveFitScale < 0.99 ? `1 Page • ${Math.round(liveFitScale * 100)}%` : 'Page 1 / 1')
+                    : 'Multi-Page'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {/* Quick 1-Page Toggle */}
+                <button 
+                  type="button"
+                  onClick={() => setResume(prev => ({
+                    ...prev,
+                    settings: {
+                      ...prev.settings,
+                      fitToOnePage: !prev.settings?.fitToOnePage,
+                      ...(prev.settings?.fitToOnePage ? {} : { margins: 'compact' })
+                    }
+                  }))}
+                  title="Toggle single-page layout mode"
+                  className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-colors border",
+                    resume.settings?.fitToOnePage 
+                      ? "bg-emerald-600 text-white border-emerald-500 shadow-xs" 
+                      : isDark ? "bg-white/5 text-slate-400 border-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:text-slate-900"
                   )}
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  {/* Quick 1-Page Toggle */}
-                  <button 
-                    type="button"
-                    onClick={() => setResume(prev => ({
-                      ...prev,
-                      settings: {
-                        ...prev.settings,
-                        fitToOnePage: !prev.settings?.fitToOnePage,
-                        ...(prev.settings?.fitToOnePage ? {} : { margins: 'compact' })
-                      }
-                    }))}
-                    title="Toggle single-page layout mode"
-                    className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all border",
-                      resume.settings?.fitToOnePage 
-                        ? "bg-emerald-600 text-white border-emerald-500 shadow-sm" 
-                        : isDark ? "bg-white/5 text-slate-400 border-white/10 hover:text-white" : "bg-white text-slate-600 border-slate-200 hover:text-slate-900"
-                    )}
-                  >
-                    <Zap className={cn("w-3 h-3", resume.settings?.fitToOnePage ? "text-amber-300" : "text-amber-500")} />
-                    <span>{resume.settings?.fitToOnePage ? '1-Page: ON' : '1-Page Fit'}</span>
-                  </button>
-
-                  {/* Auto-Fit Button */}
-                  <button 
-                    type="button"
-                    onClick={handleAutoFitOnePage}
-                    title="Auto-tune margins, font sizes, and layout to fit in 1 page"
-                    className={`hidden xl:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all ${isDark ? 'text-violet-300 bg-violet-950/40 border border-violet-800/60 hover:bg-violet-900/40' : 'text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100'}`}
-                  >
-                    <Sparkles className="w-3 h-3 text-violet-500" />
-                    <span>Auto-Fit</span>
-                  </button>
-                  {/* Zoom Controls */}
-                  <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{
-                    background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(241,245,249,0.90)',
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
-                  }}>
-                    <button onClick={() => setManualScale(prev => Math.max(0.15, (prev || previewScale) - 0.08))}
-                      title="Zoom Out"
-                      className={`w-6 h-6 flex items-center justify-center rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <button onClick={() => setManualScale(previewScale)}
-                      title="Auto Fit"
-                      className={`px-1.5 text-[9px] font-mono font-bold ${isDark ? 'text-violet-300 hover:text-white' : 'text-violet-700 hover:text-violet-900'}`}>
-                      {Math.round((manualScale || previewScale) * 100)}%
-                    </button>
-                    <button onClick={() => setManualScale(prev => Math.min(1.8, (prev || previewScale) + 0.08))}
-                      title="Zoom In"
-                      className={`w-6 h-6 flex items-center justify-center rounded-md transition-all ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Full window preview */}
-                  <button onClick={() => setIsPreviewMode(true)} title="Expand Full View"
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all ${isDark ? 'text-slate-400 hover:text-white bg-white/5' : 'text-slate-600 hover:text-slate-900 bg-slate-100'}`}
-                    style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}` }}>
-                    <Eye className="w-3.5 h-3.5 text-violet-500" />
-                  </button>
-
-                  {/* Export PDF shortcut */}
-                  <button onClick={handleDownloadPdf} title="Export PDF"
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white transition-all hover:scale-105"
-                    style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                    <Download className="w-3 h-3" />
-                    <span>PDF</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Preview canvas */}
-              <div className="flex-1 overflow-auto flex justify-center items-start p-4 scrollbar-hide print:hidden transition-colors duration-300" ref={previewContainerRef}
-                style={{ background: isDark ? 'rgba(6,9,16,0.60)' : 'rgba(241,245,249,0.90)' }}>
-                <div
-                  id="screen-preview-wrapper"
-                  className="bg-white shrink-0 origin-top flex justify-center transition-transform duration-200 ease-out mb-16 rounded-sm"
-                  style={{
-                    width: '210mm',
-                    minWidth: '210mm',
-                    transform: `scale(${manualScale || previewScale})`,
-                    transformOrigin: 'top center',
-                    boxShadow: isDark ? '0 15px 60px rgba(0,0,0,0.70)' : '0 15px 40px rgba(0,0,0,0.12)',
-                  }}
                 >
-                  <ResumePreview content={resume.content as ResumeContent} templateType={resume.templateType || 'modern-professional'} settings={resume.settings} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <Zap className={cn("w-3 h-3", resume.settings?.fitToOnePage ? "text-amber-300" : "text-amber-500")} />
+                  <span>{resume.settings?.fitToOnePage ? '1-Page: ON' : '1-Page Fit'}</span>
+                </button>
 
-        {/* 📄 Mobile preview */}
-        <AnimatePresence>
-          {(!isPreviewMode && showLivePreview && showAtsPanel && mobileView === 'preview') && (
-            <motion.div 
-              className="fixed inset-0 z-90 w-full h-full pb-24 flex flex-col overflow-hidden bg-[#0a0d14] print:hidden"
-            >
-              <div className="print:hidden h-12 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-4 flex items-center justify-between shrink-0 shadow-md">
-                <div className="flex items-center gap-2">
-                  <Eye className="w-3.5 h-3.5 text-indigo-400" />
-                  <h3 className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider hidden sm:block">Preview</h3>
-                  <button onClick={() => setIsPreviewMode(true)} className="flex lg:hidden items-center gap-1 px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-indigo-300 text-[10px] font-mono font-bold">
-                    <Eye className="w-3 h-3" /> Full View
+                {/* Auto-Fit Button */}
+                <button 
+                  type="button"
+                  onClick={handleAutoFitOnePage}
+                  title="Auto-tune margins, font sizes, and layout to fit in 1 page"
+                  className={`hidden xl:flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-colors ${isDark ? 'text-violet-300 bg-violet-950/40 border border-violet-800/60 hover:bg-violet-900/40' : 'text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100'}`}
+                >
+                  <Sparkles className="w-3 h-3 text-violet-500" />
+                  <span>Auto-Fit</span>
+                </button>
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-0.5 p-0.5 rounded-lg" style={{
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(241,245,249,0.90)',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
+                }}>
+                  <button onClick={() => setManualScale(prev => Math.max(0.15, (prev || previewScale) - 0.08))}
+                    title="Zoom Out"
+                    className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <button onClick={() => setManualScale(previewScale)}
+                    title="Auto Fit"
+                    className={`px-1.5 text-[9px] font-mono font-bold ${isDark ? 'text-violet-300 hover:text-white' : 'text-violet-700 hover:text-violet-900'}`}>
+                    {Math.round((manualScale || previewScale) * 100)}%
+                  </button>
+                  <button onClick={() => setManualScale(prev => Math.min(1.8, (prev || previewScale) + 0.08))}
+                    title="Zoom In"
+                    className={`w-6 h-6 flex items-center justify-center rounded-md transition-colors ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
-                <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-xl border border-slate-800 shrink-0">
-                  <button onClick={() => setManualScale(prev => Math.max(0.1, (prev || previewScale) - 0.1))} className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"><Minus className="w-3 h-3" /></button>
-                  <span className="px-1.5 text-[9px] font-mono font-bold text-slate-300 w-8 text-center">{Math.round((manualScale || previewScale) * 100)}%</span>
-                  <button onClick={() => setManualScale(prev => Math.min(2, (prev || previewScale) + 0.1))} className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"><Plus className="w-3 h-3" /></button>
-                </div>
+
+                {/* Full window preview */}
+                <button onClick={() => setIsPreviewMode(true)} title="Expand Full View"
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${isDark ? 'text-slate-400 hover:text-white bg-white/5' : 'text-slate-600 hover:text-slate-900 bg-slate-100'}`}
+                  style={{ border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}` }}>
+                  <Eye className="w-3.5 h-3.5 text-violet-500" />
+                </button>
+
+                {/* Export PDF shortcut */}
+                <button onClick={handleDownloadPdf} title="Export PDF"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-white transition-colors hover:brightness-110"
+                  style={{ background: 'linear-gradient(135deg, #059669, #0d9488)' }}>
+                  <Download className="w-3 h-3" />
+                  <span>PDF</span>
+                </button>
               </div>
-              <div className="flex-1 overflow-auto p-3 flex justify-center items-start scrollbar-hide print:hidden" ref={previewContainerRef}>
-                <div 
-                  id="mobile-preview-wrapper" 
-                  className="bg-white shrink-0 origin-top shadow-2xl" 
-                  style={{ 
-                    width: '210mm',
-                    minWidth: '210mm',
-                    transform: `scale(${manualScale || previewScale})`,
-                    transformOrigin: 'top center'
-                  }}
-                >
-                  <ResumePreview content={resume.content as ResumeContent} templateType={resume.templateType || 'modern-professional'} settings={resume.settings} />
-                </div>
+            </div>
+
+            {/* Preview canvas */}
+            <div className="flex-1 overflow-auto flex justify-center items-start p-4 scrollbar-hide print:hidden surface-dots" ref={previewContainerRef}
+              style={{ backgroundColor: isDark ? '#060910' : '#e2e8f0' }}>
+              <div
+                id="screen-preview-wrapper"
+                className="bg-white shrink-0 origin-top flex justify-center mb-16 rounded-xs"
+                style={{
+                  width: '210mm',
+                  minWidth: '210mm',
+                  transform: `scale(${manualScale || previewScale})`,
+                  transformOrigin: 'top center',
+                  boxShadow: isDark ? '0 18px 50px rgba(0,0,0,0.65)' : '0 14px 36px rgba(15,23,42,0.16)',
+                }}
+              >
+                <ResumePreview
+                  content={(deferredContent || resume.content) as ResumeContent}
+                  templateType={deferredTemplate || 'modern-professional'}
+                  settings={deferredSettings}
+                  onScaleChange={setLiveFitScale}
+                />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
 
         {/* ATS Intelligence Panel */}
-        <AnimatePresence>
-          {(mobileView === 'ats' || showAtsPanel) && (
-            <motion.div
-              initial={{ x: 40, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 40, opacity: 0 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className={cn(
-                "print:hidden flex-col shrink-0 transition-colors duration-300",
-                mobileView === 'ats' ? "fixed inset-0 w-full h-full pb-20 overflow-y-auto flex z-90" : "hidden lg:flex lg:w-85 xl:w-95 overflow-y-auto"
-              )}
-              style={{
-                background: isDark ? 'rgba(6,8,17,0.95)' : '#ffffff',
-                borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
-              }}
-            >
+        {(mobileView === 'ats' || showAtsPanel) && (
+          <div
+            className={cn(
+              "print:hidden flex-col shrink-0 transition-colors",
+              mobileView === 'ats'
+                ? "fixed inset-0 w-full h-full pb-20 overflow-y-auto flex z-90"
+                : showAtsPanel
+                ? "hidden lg:flex lg:w-85 xl:w-95 overflow-y-auto"
+                : "hidden"
+            )}
+            style={{
+              background: isDark ? 'rgba(6,8,17,0.97)' : '#ffffff',
+              borderLeft: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}`
+            }}
+          >
               {/* ATS Header */}
               <div className="p-5 space-y-4 shrink-0 transition-colors duration-300"
                 style={{ borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.80)'}` }}>
@@ -2780,139 +2822,136 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
 
               {/* ATS Results */}
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                <AnimatePresence mode="wait">
-                  {atsAnalysis ? (
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-                      {/* Score */}
-                      <div className={`p-4 rounded-2xl space-y-3 border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                        <div className="flex justify-between items-center">
-                          <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Match Score</p>
-                          <p className="text-2xl font-black font-mono" style={{ color: atsAnalysis.score >= 80 ? '#10b981' : atsAnalysis.score >= 50 ? '#f59e0b' : '#f43f5e' }}>{atsAnalysis.score}%</p>
-                        </div>
-                        <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
-                          <motion.div
-                            initial={{ width: 0 }} animate={{ width: `${atsAnalysis.score}%` }} transition={{ duration: 1, ease: 'easeOut' }}
-                            className="h-full rounded-full"
-                            style={{ background: atsAnalysis.score >= 80 ? 'linear-gradient(90deg,#059669,#34d399)' : atsAnalysis.score >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' : 'linear-gradient(90deg,#dc2626,#fb7185)' }}
-                          />
-                        </div>
+                {atsAnalysis ? (
+                  <div className="space-y-5">
+                    {/* Score */}
+                    <div className={`p-4 rounded-2xl space-y-3 border ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                      <div className="flex justify-between items-center">
+                        <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Match Score</p>
+                        <p className="text-2xl font-black font-mono" style={{ color: atsAnalysis.score >= 80 ? '#10b981' : atsAnalysis.score >= 50 ? '#f59e0b' : '#f43f5e' }}>{atsAnalysis.score}%</p>
                       </div>
-
-                      {/* Missing keywords */}
-                      <div className="space-y-2">
-                        <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Missing Keywords</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(atsAnalysis.missingKeywords || []).length > 0
-                            ? atsAnalysis.missingKeywords.map((kw: string, i: number) => (
-                              <span key={i} className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border ${isDark ? 'bg-rose-500/10 border-rose-500/25 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>{kw}</span>
-                            ))
-                            : <span className="text-xs font-mono text-emerald-500 font-bold">✨ No critical keywords missing!</span>
-                          }
-                        </div>
+                      <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                        <div
+                          className="h-full rounded-full transition-[width] duration-300 ease-out"
+                          style={{ width: `${atsAnalysis.score}%`, background: atsAnalysis.score >= 80 ? 'linear-gradient(90deg,#059669,#34d399)' : atsAnalysis.score >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' : 'linear-gradient(90deg,#dc2626,#fb7185)' }}
+                        />
                       </div>
-
-                      {/* Improvements */}
-                      <div className={`space-y-2 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                        <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Recommended Actions</p>
-                        <div className="space-y-2">
-                          {[
-                            { icon: CheckCircle2, text: `Add ${atsAnalysis.missingKeywords?.slice(0,3).join(', ') || 'role keywords'} in experience bullets.`, color: '#10b981', bg: isDark ? 'rgba(16,185,129,0.10)' : '#ecfdf5', border: isDark ? 'rgba(16,185,129,0.20)' : '#a7f3d0' },
-                            { icon: Lightbulb, text: 'Use standard section headings for 100% ATS parse success.', color: '#8b5cf6', bg: isDark ? 'rgba(139,92,246,0.10)' : '#f5f3ff', border: isDark ? 'rgba(139,92,246,0.20)' : '#ddd6fe' },
-                            { icon: Activity, text: 'Quantify impact with % or $ to boost recruiter scoring.', color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.10)' : '#fffbeb', border: isDark ? 'rgba(245,158,11,0.20)' : '#fde68a' },
-                          ].map(({ icon: Icon, text, color, bg, border }, i) => (
-                            <div key={i} className="flex gap-2.5 p-3 rounded-xl" style={{ background: bg, border: `1px solid ${border}` }}>
-                              <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color }} />
-                              <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{text}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center space-y-3 py-16">
-                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: isDark ? 'rgba(124,58,237,0.10)' : '#ede9fe', border: `1px solid ${isDark ? 'rgba(124,58,237,0.20)' : '#c7d2fe'}` }}>
-                        <Info className="w-6 h-6 text-violet-500" />
-                      </div>
-                      <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Scanner Ready</p>
-                      <p className={`text-xs max-w-50 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Paste a job description and scan to check your match score.</p>
                     </div>
-                  )}
-                </AnimatePresence>
+
+                    {/* Missing keywords */}
+                    <div className="space-y-2">
+                      <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Missing Keywords</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(atsAnalysis.missingKeywords || []).length > 0
+                          ? atsAnalysis.missingKeywords.map((kw: string, i: number) => (
+                            <span key={i} className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border ${isDark ? 'bg-rose-500/10 border-rose-500/25 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-700'}`}>{kw}</span>
+                          ))
+                          : <span className="text-xs font-mono text-emerald-500 font-bold">✨ No critical keywords missing!</span>
+                        }
+                      </div>
+                    </div>
+
+                    {/* Improvements */}
+                    <div className={`space-y-2 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                      <p className={`text-[10px] font-mono font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Recommended Actions</p>
+                      <div className="space-y-2">
+                        {[
+                          { icon: CheckCircle2, text: `Add ${atsAnalysis.missingKeywords?.slice(0,3).join(', ') || 'role keywords'} in experience bullets.`, color: '#10b981', bg: isDark ? 'rgba(16,185,129,0.10)' : '#ecfdf5', border: isDark ? 'rgba(16,185,129,0.20)' : '#a7f3d0' },
+                          { icon: Lightbulb, text: 'Use standard section headings for 100% ATS parse success.', color: '#8b5cf6', bg: isDark ? 'rgba(139,92,246,0.10)' : '#f5f3ff', border: isDark ? 'rgba(139,92,246,0.20)' : '#ddd6fe' },
+                          { icon: Activity, text: 'Quantify impact with % or $ to boost recruiter scoring.', color: '#f59e0b', bg: isDark ? 'rgba(245,158,11,0.10)' : '#fffbeb', border: isDark ? 'rgba(245,158,11,0.20)' : '#fde68a' },
+                        ].map(({ icon: Icon, text, color, bg, border }, i) => (
+                          <div key={i} className="flex gap-2.5 p-3 rounded-xl" style={{ background: bg, border: `1px solid ${border}` }}>
+                            <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color }} />
+                            <p className={`text-xs leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center space-y-3 py-16">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: isDark ? 'rgba(124,58,237,0.10)' : '#ede9fe', border: `1px solid ${isDark ? 'rgba(124,58,237,0.20)' : '#c7d2fe'}` }}>
+                      <Info className="w-6 h-6 text-violet-500" />
+                    </div>
+                    <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Scanner Ready</p>
+                    <p className={`text-xs max-w-50 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Paste a job description and scan to check your match score.</p>
+                  </div>
+                )}
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
       </div>
 
       {/* 🌟 FULL WINDOW PREVIEW MODAL 🌟 */}
-      <AnimatePresence>
-        {isPreviewMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={`fixed inset-0 z-150 backdrop-blur-md flex flex-col ${isDark ? 'bg-slate-950/95' : 'bg-slate-900/80'}`}
-          >
-            <div className={`h-16 px-6 md:px-10 flex items-center justify-between shrink-0 ${isDark ? 'bg-slate-900/90 border-b border-white/10' : 'bg-white border-b border-slate-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-500">
-                  <Eye className="w-4 h-4" />
-                </div>
-                <h3 className={`font-bold tracking-widest uppercase text-sm hidden sm:block ${isDark ? 'text-white' : 'text-slate-900'}`}>Full Window Preview</h3>
+      {isPreviewMode && (
+        <div
+          className={`print:hidden fixed inset-0 z-150 flex flex-col ${isDark ? 'bg-slate-950/95' : 'bg-slate-900/90'}`}
+        >
+          <div className={`h-14 px-6 md:px-10 flex items-center justify-between shrink-0 ${isDark ? 'bg-[#0d111b] border-b border-white/10' : 'bg-white border-b border-slate-200'}`}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-500">
+                <Eye className="w-4 h-4" />
               </div>
-
-              <div className="flex items-center gap-3">
-                <div className={`hidden md:flex items-center rounded-lg p-1 border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
-                  <button onClick={() => setManualScale(prev => Math.max(0.2, (prev || 1) - 0.1))} className={`p-1.5 rounded transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-200'}`}><Minus className="w-4 h-4" /></button>
-                  <span className={`px-3 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>{Math.round((manualScale || 1) * 100)}%</span>
-                  <button onClick={() => setManualScale(prev => Math.min(2, (prev || 1) + 0.1))} className={`p-1.5 rounded transition-all ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-200'}`}><Plus className="w-4 h-4" /></button>
-                </div>
-
-                <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-all shadow-md">
-                  <Download className="w-4 h-4" /> <span className="hidden sm:inline">Download PDF</span>
-                </button>
-                
-                <button onClick={() => setIsPreviewMode(false)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${isDark ? 'bg-white/10 hover:bg-red-500/20 text-slate-300 hover:text-red-400' : 'bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600'}`}>
-                  <X className="w-4 h-4" /> Close
-                </button>
-              </div>
+              <h3 className={`font-bold tracking-wider uppercase text-xs hidden sm:block ${isDark ? 'text-white' : 'text-slate-900'}`}>Full Window Preview</h3>
+              <span className={cn(
+                "px-2 py-0.5 rounded text-[10px] font-bold font-mono border",
+                resume.settings?.fitToOnePage
+                  ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/30"
+                  : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+              )}>
+                {resume.settings?.fitToOnePage
+                  ? (liveFitScale < 0.99 ? `1 Page • ${Math.round(liveFitScale * 100)}%` : 'Page 1 / 1')
+                  : 'Multi-Page'}
+              </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-10 flex justify-center items-start scrollbar-hide" style={{ background: isDark ? '#080c16' : '#f1f5f9' }}>
-              <motion.div 
-                initial={{ y: 30, scale: 0.95 }} animate={{ y: 0, scale: 1 }} transition={{ delay: 0.1, type: "spring", damping: 25 }}
-                className="bg-white shadow-2xl shrink-0"
-                style={{ 
-                  width: '210mm',
-                  minWidth: '210mm',
-                  transform: `scale(${manualScale || 1})`, 
-                  transformOrigin: 'top center' 
-                }}
-              >
-                <ResumePreview content={resume.content as ResumeContent} templateType={resume.templateType || 'modern-professional'} settings={resume.settings} />
-              </motion.div>
+            <div className="flex items-center gap-2.5">
+              <div className={`hidden md:flex items-center rounded-lg p-1 border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
+                <button onClick={() => setManualScale(prev => Math.max(0.2, (prev || 1) - 0.1))} className={`p-1.5 rounded transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-200'}`}><Minus className="w-4 h-4" /></button>
+                <span className={`px-3 text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-800'}`}>{Math.round((manualScale || 1) * 100)}%</span>
+                <button onClick={() => setManualScale(prev => Math.min(2, (prev || 1) + 0.1))} className={`p-1.5 rounded transition-colors ${isDark ? 'text-slate-300 hover:bg-white/10' : 'text-slate-700 hover:bg-slate-200'}`}><Plus className="w-4 h-4" /></button>
+              </div>
+
+              <button onClick={handleDownloadDocx} className={`hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-colors ${isDark ? 'bg-blue-950/50 border-blue-800 text-blue-300 hover:bg-blue-900/50' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
+                <FileText className="w-4 h-4" /> <span>Export DOC</span>
+              </button>
+
+              <button onClick={handleDownloadPdf} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold transition-colors hover:brightness-110 shadow-sm">
+                <Download className="w-4 h-4" /> <span className="hidden sm:inline">{resume.settings?.fitToOnePage ? 'Download 1-Page PDF' : 'Download PDF'}</span>
+              </button>
+              
+              <button onClick={() => setIsPreviewMode(false)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${isDark ? 'bg-white/10 hover:bg-red-500/20 text-slate-300 hover:text-red-400' : 'bg-slate-100 hover:bg-red-50 text-slate-700 hover:text-red-600'}`}>
+                <X className="w-4 h-4" /> Close
+              </button>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 md:p-10 flex justify-center items-start scrollbar-hide surface-dots" style={{ backgroundColor: isDark ? '#080c16' : '#e2e8f0' }}>
+            <div 
+              className="bg-white shadow-2xl shrink-0"
+              style={{ 
+                width: '210mm',
+                minWidth: '210mm',
+                transform: `scale(${manualScale || 1})`, 
+                transformOrigin: 'top center' 
+              }}
+            >
+              <ResumePreview content={resume.content as ResumeContent} templateType={resume.templateType || 'modern-professional'} settings={resume.settings} onScaleChange={setLiveFitScale} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 🪄 AI Auto-Fill & Resume Generator Modal */}
-      <AnimatePresence>
-        {isAiModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-200 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
-            onClick={(e) => e.target === e.currentTarget && !isGenerating && setIsAiModalOpen(false)}
+      {isAiModalOpen && (
+        <div
+          className="print:hidden fixed inset-0 z-200 bg-slate-950/85 flex items-center justify-center p-4 md:p-6"
+          onClick={(e) => e.target === e.currentTarget && !isGenerating && setIsAiModalOpen(false)}
+        >
+          <div
+            className={`border rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
           >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className={`border rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-            >
               {/* Header */}
               <div className={`px-6 py-5 border-b flex items-center justify-between rounded-t-3xl shrink-0 ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-3">
@@ -3035,24 +3074,20 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                     </>
                   )}
                 </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 📥 AI Resume Importer Modal */}
-      <AnimatePresence>
-        {isImportModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-200 bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 md:p-6"
-            onClick={(e) => e.target === e.currentTarget && setIsImportModalOpen(false)}
+      {isImportModalOpen && (
+        <div
+          className="print:hidden fixed inset-0 z-200 bg-slate-950/85 flex items-center justify-center p-4 md:p-6"
+          onClick={(e) => e.target === e.currentTarget && setIsImportModalOpen(false)}
+        >
+          <div
+            className={`border rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
           >
-            <motion.div
-              initial={{ scale: 0.95, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 24 }}
-              className={`border rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-            >
               {/* Header */}
               <div className={`px-6 py-5 border-b flex items-center justify-between rounded-t-3xl shrink-0 ${isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-3">
@@ -3219,17 +3254,129 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
                   )}
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
 
-      {/* 🖨️ Dedicated Clean Print Root for 100% Clickable Links & Zero-Distortion PDF Generation */}
-      <div id="print-resume-root" className="hidden print:block print:w-full print:h-auto print:bg-white m-0 p-0">
-        <ResumePreview 
-          content={resume.content as ResumeContent} 
-          templateType={resume.templateType || 'modern-professional'} 
-          settings={resume.settings} 
+      {/* 📸 Profile Photo Cropper Modal */}
+      {showCropModal && cropImage && (
+        <div
+          className="print:hidden fixed inset-0 z-250 bg-slate-950/85 flex items-center justify-center p-4"
+          onClick={() => setShowCropModal(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className={`w-full max-w-md rounded-3xl border overflow-hidden shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+          >
+              <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                <h3 className="text-sm font-black">Crop Profile Photo</h3>
+                <button onClick={() => setShowCropModal(false)} className="p-1.5 rounded-xl hover:bg-slate-500/15">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="relative h-72 w-full bg-slate-950">
+                <Cropper
+                  image={cropImage}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono font-bold opacity-70">Zoom</span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.05}
+                    value={zoom}
+                    onChange={e => setZoom(Number(e.target.value))}
+                    className="flex-1 accent-indigo-600"
+                  />
+                </div>
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowCropModal(false)}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold border ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-200 text-slate-700 hover:bg-slate-100'}`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveCroppedImage}
+                    className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-500 shadow-md"
+                  >
+                    Apply Headshot ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* 🔗 Social Profile Sync Modal (GitHub / LinkedIn) */}
+      {isSocialSyncOpen && (
+        <div
+          className="print:hidden fixed inset-0 z-250 bg-slate-950/85 flex items-center justify-center p-4"
+          onClick={() => !isSyncing && setIsSocialSyncOpen(false)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            className={`w-full max-w-md rounded-3xl border p-6 space-y-5 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+          >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+                    <Github className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black">Sync Developer Profiles</h3>
+                    <p className="text-[11px] font-mono text-slate-400">Import repositories & career history</p>
+                  </div>
+                </div>
+                <button onClick={() => !isSyncing && setIsSocialSyncOpen(false)} className="p-1.5 rounded-xl hover:bg-slate-500/15">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <Input label="GitHub Username" value={githubUsername} onChange={setGithubUsername} placeholder="e.g. Aniketsingh-45" />
+                <Input label="LinkedIn Profile URL" value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/in/yourname" />
+              </div>
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsSocialSyncOpen(false)}
+                  disabled={isSyncing}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold border ${isDark ? 'border-slate-700 text-slate-300' : 'border-slate-200 text-slate-700'}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSocialSync}
+                  disabled={isSyncing || (!githubUsername.trim() && !linkedinUrl.trim())}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-linear-to-r from-indigo-600 to-violet-600 text-white shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span>{isSyncing ? 'Importing…' : 'Sync Into Resume'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      {/* 🖨️ Dedicated Exact-Parity Print Root (Idle snapshot while editing = 0% print reflow lag; instant flush when printing) */}
+      <div id="print-resume-root" aria-hidden="true" className="print-offscreen print:block print:w-full print:h-auto print:bg-white m-0 p-0">
+        <ResumePreview
+          content={(isPrinting ? resume.content : (printSnapshot.content || resume.content)) as ResumeContent}
+          templateType={(isPrinting ? resume.templateType : printSnapshot.templateType) || 'modern-professional'}
+          settings={isPrinting ? resume.settings : printSnapshot.settings}
         />
       </div>
 
@@ -3237,20 +3384,38 @@ export function ResumeEditor({ resumeId, onBack }: ResumeEditorProps) {
   );
 }
 
-function Input({ label, value, onChange, placeholder, error, suggestions }: { label: string, value: string | undefined, onChange: (v: string) => void, placeholder?: string, error?: string, suggestions?: string[] }) {
+const Input = React.memo(function Input({ label, value, onChange, placeholder, error, suggestions }: { label: string, value: string | undefined, onChange: (v: string) => void, placeholder?: string, error?: string, suggestions?: string[] }) {
   const listId = `suggestions-${label.replace(/\s+/g, '-').toLowerCase()}`;
   const { isDark } = useTheme();
+  const [localVal, setLocalVal] = useState(value || '');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    setLocalVal(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  const handleChange = (v: string) => {
+    setLocalVal(v);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChangeRef.current(v), 95);
+  };
 
   return (
     <div className="space-y-1">
       <label className={`text-[10px] font-mono font-bold uppercase tracking-widest ml-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{label}</label>
       <input
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
+        value={localVal}
+        onChange={e => handleChange(e.target.value)}
         placeholder={placeholder}
         list={suggestions ? listId : undefined}
         autoComplete={suggestions ? 'on' : 'off'}
-        className={`w-full text-sm font-medium outline-none transition-all duration-200 rounded-xl px-3.5 py-2.5 ${isDark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
+        className={`w-full text-sm font-medium outline-none transition-colors duration-150 rounded-xl px-3.5 py-2.5 ${isDark ? 'text-slate-100 placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`}
         style={{
           background: error ? 'rgba(239,68,68,0.08)' : (isDark ? 'rgba(255,255,255,0.04)' : '#ffffff'),
           border: `1px solid ${error ? 'rgba(239,68,68,0.50)' : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.90)')}`,
@@ -3261,6 +3426,11 @@ function Input({ label, value, onChange, placeholder, error, suggestions }: { la
           e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.18)';
         }}
         onBlur={e => {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+            onChangeRef.current(e.target.value);
+          }
           e.target.style.borderColor = error ? 'rgba(239,68,68,0.50)' : (isDark ? 'rgba(255,255,255,0.10)' : 'rgba(203,213,225,0.90)');
           e.target.style.boxShadow = isDark ? 'none' : '0 1px 2px rgba(0,0,0,0.03)';
         }}
@@ -3273,13 +3443,75 @@ function Input({ label, value, onChange, placeholder, error, suggestions }: { la
       {error && <p className="text-[10px] font-mono font-semibold mt-1 text-rose-500">{error}</p>}
     </div>
   );
-}
+});
 
-function ProTip({ children }: { children: React.ReactNode }) {
+const AutoRawInput = React.memo(function AutoRawInput({ value, onChange, className, placeholder }: { value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
+  const [localVal, setLocalVal] = useState(value || '');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => { setLocalVal(value || ''); }, [value]);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  return (
+    <input
+      value={localVal}
+      placeholder={placeholder}
+      className={className}
+      onChange={e => {
+        const v = e.target.value;
+        setLocalVal(v);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => onChangeRef.current(v), 95);
+      }}
+      onBlur={e => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+          onChangeRef.current(e.target.value);
+        }
+      }}
+    />
+  );
+});
+
+const AutoTextarea = React.memo(function AutoTextarea({ value, onChange, className, placeholder }: { value: string; onChange: (v: string) => void; className?: string; placeholder?: string }) {
+  const [localVal, setLocalVal] = useState(value || '');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  useEffect(() => { setLocalVal(value || ''); }, [value]);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  return (
+    <textarea
+      value={localVal}
+      placeholder={placeholder}
+      className={className}
+      onChange={e => {
+        const v = e.target.value;
+        setLocalVal(v);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => onChangeRef.current(v), 95);
+      }}
+      onBlur={e => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+          timerRef.current = null;
+          onChangeRef.current(e.target.value);
+        }
+      }}
+    />
+  );
+});
+
+const ProTip = React.memo(function ProTip({ children }: { children: React.ReactNode }) {
   const { isDark } = useTheme();
 
   return (
-    <div className="flex items-start gap-2.5 p-3.5 rounded-xl shadow-sm"
+    <div className="flex items-start gap-2.5 p-3.5 rounded-xl shadow-xs"
       style={{
         background: isDark ? 'rgba(124,58,237,0.10)' : 'rgba(124,58,237,0.07)',
         border: `1px solid ${isDark ? 'rgba(124,58,237,0.25)' : 'rgba(124,58,237,0.20)'}`
@@ -3290,4 +3522,101 @@ function ProTip({ children }: { children: React.ReactNode }) {
       </p>
     </div>
   );
-}
+});
+
+const TemplateThumbnail = React.memo(function TemplateThumbnail({ id, accent }: { id: string; accent: string }) {
+  const isSidebarDark = id === 'modern-professional' || id === 'modern-photo';
+  const isVibrantTop = id === 'creative-vibrant' || id === 'modern-creative';
+  const isTech = id === 'tech-focused';
+  const isBanner = id === 'executive-pro' || id === 'ats-harvard-ivy';
+  const isRightSidebar = id === 'student-entry' || id === 'creative-vibrant' || id === 'modern-creative' || id === 'executive-pro';
+
+  return (
+    <div className="w-full h-24 rounded-xl bg-white border border-slate-200 p-2 overflow-hidden shadow-inner text-left flex flex-col gap-1">
+      {isSidebarDark ? (
+        <div className="flex h-full gap-1.5">
+          <div className="w-1/3 h-full rounded-sm bg-slate-900 p-1.5 flex flex-col gap-1">
+            {id === 'modern-photo' && <div className="w-5 h-5 rounded-full bg-slate-700 border border-white/40 mx-auto mb-0.5" />}
+            <div className="h-1.5 w-4/5 rounded-full bg-white/85" />
+            <div className="h-1 w-full rounded-full" style={{ backgroundColor: accent }} />
+            <div className="h-1 w-2/3 rounded-full bg-white/30 mt-1" />
+            <div className="h-1 w-3/4 rounded-full bg-white/25" />
+          </div>
+          <div className="flex-1 space-y-1.5 pt-0.5">
+            <div className="h-1.5 w-1/2 rounded-full" style={{ backgroundColor: accent }} />
+            <div className="h-1 w-full rounded-full bg-slate-200" />
+            <div className="h-1 w-4/5 rounded-full bg-slate-200" />
+            <div className="h-1.5 w-2/5 rounded-full mt-1" style={{ backgroundColor: accent }} />
+            <div className="grid grid-cols-2 gap-1">
+              <div className="h-3.5 rounded-sm bg-slate-50 border border-slate-200" />
+              <div className="h-3.5 rounded-sm bg-slate-50 border border-slate-200" />
+            </div>
+          </div>
+        </div>
+      ) : isVibrantTop ? (
+        <div className="space-y-1.5 h-full">
+          <div className="rounded-sm p-1.5" style={{ backgroundColor: accent }}>
+            <div className="h-1.5 w-1/2 rounded-full bg-white/95 mb-0.5" />
+            <div className="h-1 w-1/3 rounded-full bg-white/70" />
+          </div>
+          <div className="flex gap-1.5 h-10">
+            <div className="flex-1 space-y-1">
+              <div className="h-1 w-2/3 rounded-full" style={{ backgroundColor: accent }} />
+              <div className="h-1 w-full rounded-full bg-slate-200" />
+              <div className="h-1 w-5/6 rounded-full bg-slate-200" />
+            </div>
+            <div className="w-1/3 space-y-1 border-l border-slate-200 pl-1">
+              <div className="h-1.5 w-full rounded-sm" style={{ backgroundColor: `${accent}30` }} />
+              <div className="h-1.5 w-4/5 rounded-sm" style={{ backgroundColor: `${accent}20` }} />
+            </div>
+          </div>
+        </div>
+      ) : isTech ? (
+        <div className="space-y-1.5 h-full bg-slate-50/70 rounded p-1">
+          <div className="rounded-sm bg-slate-900 p-1.5">
+            <div className="h-1.5 w-1/2 rounded-full mb-0.5" style={{ backgroundColor: accent }} />
+            <div className="h-1 w-2/3 rounded-full bg-white/40" />
+          </div>
+          <div className="h-1 w-1/3 rounded-full bg-slate-400" />
+          <div className="grid grid-cols-2 gap-1">
+            <div className="h-4 rounded-sm bg-white border border-slate-200" />
+            <div className="h-4 rounded-sm bg-white border border-slate-200" />
+          </div>
+        </div>
+      ) : isRightSidebar ? (
+        <div className="space-y-1.5 h-full">
+          <div className={cn('pb-1 border-b-2', isBanner ? 'text-center' : 'flex justify-between items-center')} style={{ borderColor: accent }}>
+            <div className={cn('h-2 w-1/2 rounded-full bg-slate-900', isBanner && 'mx-auto')} />
+          </div>
+          <div className="flex gap-1.5 h-12">
+            <div className="flex-1 space-y-1">
+              <div className="h-1 w-1/3 rounded-full" style={{ backgroundColor: accent }} />
+              <div className="h-1 w-full rounded-full bg-slate-200" />
+              <div className="h-1 w-4/5 rounded-full bg-slate-200" />
+            </div>
+            <div className="w-1/3 space-y-1 border-l border-slate-200 pl-1">
+              <div className="h-1 w-full rounded-full" style={{ backgroundColor: accent }} />
+              <div className="h-1 w-3/4 rounded-full bg-slate-200" />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-1 h-full">
+          <div className={cn('pb-1 border-b-2', id === 'minimalist-clean' || id === 'executive-minimal' ? 'text-left' : 'text-center')} style={{ borderColor: id === 'minimalist-clean' ? '#1e293b' : accent }}>
+            <div className={cn('h-2 w-1/2 rounded-full bg-slate-900 mb-0.5', id !== 'minimalist-clean' && id !== 'executive-minimal' && 'mx-auto')} />
+            <div className={cn('h-1 w-2/3 rounded-full bg-slate-300', id !== 'minimalist-clean' && id !== 'executive-minimal' && 'mx-auto')} />
+          </div>
+          <div className="space-y-1">
+            <div className="h-1 w-1/4 rounded-full" style={{ backgroundColor: accent }} />
+            <div className="h-1 w-full rounded-full bg-slate-200" />
+            <div className="h-1 w-5/6 rounded-full bg-slate-200" />
+          </div>
+          <div className="grid grid-cols-2 gap-1 pt-0.5">
+            <div className="h-4 rounded-sm bg-slate-50 border border-slate-200" />
+            <div className="h-4 rounded-sm bg-slate-50 border border-slate-200" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});

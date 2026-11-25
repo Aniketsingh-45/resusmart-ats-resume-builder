@@ -130,12 +130,12 @@ html, body {
   }
 
   button, a {
-    @apply transition-all duration-200 ease-out;
+    transition: color 0.14s ease, background-color 0.14s ease, border-color 0.14s ease, opacity 0.14s ease, transform 0.12s ease;
     outline: none;
   }
 
   button:not(:disabled):active {
-    transform: scale(0.97);
+    transform: scale(0.985);
   }
 
   button:focus-visible,

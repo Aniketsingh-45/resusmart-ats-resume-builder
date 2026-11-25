@@ -100,36 +100,27 @@ html, body {
    BASE & DUAL THEME ENGINE
 ────────────────────────────────────────── */
 @layer base {
-  /* Default Dark Mode: Midnight Velvet Aurora */
+  /* Default Dark Mode: Executive Studio Dark */
   body, body[data-theme="dark"] {
     font-family: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-    background-color: #0b0f19;
+    background-color: #090d16;
     color: #f1f5f9;
     background-image:
-      radial-gradient(ellipse 90% 60% at 50% -15%, rgba(124,58,237,0.22) 0px, transparent 65%),
-      radial-gradient(ellipse 65% 45% at 5% 85%,  rgba(59,130,246,0.14) 0px, transparent 60%),
-      radial-gradient(ellipse 55% 45% at 95% 55%, rgba(6,182,212,0.12) 0px, transparent 60%);
-    background-attachment: fixed;
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,58,237,0.14) 0px, transparent 65%),
+      radial-gradient(ellipse 55% 40% at 90% 90%,  rgba(59,130,246,0.08) 0px, transparent 60%);
     min-height: 100vh;
     color-scheme: dark;
   }
 
-  /* Bright Colorful Mode: Studio Aurora Light */
+  /* Bright Mode: Crisp Editorial Light */
   body[data-theme="bright"] {
     background-color: #f8fafc;
     color: #0f172a;
     background-image:
-      radial-gradient(ellipse 90% 60% at 50% -10%, rgba(124,58,237,0.10) 0px, transparent 65%),
-      radial-gradient(ellipse 70% 50% at 0% 90%,   rgba(59,130,246,0.08) 0px, transparent 60%),
-      radial-gradient(ellipse 60% 45% at 100% 60%, rgba(236,72,153,0.07) 0px, transparent 60%),
-      radial-gradient(ellipse 50% 40% at 85% 10%,  rgba(16,185,129,0.06) 0px, transparent 55%);
-    background-attachment: fixed;
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.08) 0px, transparent 65%),
+      radial-gradient(ellipse 60% 40% at 95% 85%,  rgba(14,165,233,0.05) 0px, transparent 60%);
     min-height: 100vh;
     color-scheme: light;
-  }
-
-  html {
-    scroll-behavior: smooth;
   }
 
   h1, h2, h3, h4, h5, h6 {

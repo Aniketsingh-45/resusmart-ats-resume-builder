@@ -7,7 +7,6 @@ import {
   Search, Loader2, Sparkles, DollarSign,
   Award, BookOpen, ChevronRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import { useTheme } from '../context/ThemeContext';
 
@@ -67,16 +66,14 @@ export function CertificateEngine() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-8 transition-colors duration-300">
 
       {/* ── Page Hero ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl p-6 sm:p-8 transition-colors duration-300"
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 sm:p-8"
         style={{
           background: isDark
             ? 'linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.12) 60%, rgba(124,58,237,0.10) 100%)'
             : 'linear-gradient(135deg, #ecfdf5 0%, #e0f2fe 60%, #ede9fe 100%)',
           border: isDark ? '1px solid rgba(52,211,153,0.22)' : '1px solid #a7f3d0',
-          boxShadow: isDark ? '0 0 60px rgba(16,185,129,0.08)' : '0 10px 30px rgba(16,185,129,0.06)',
+          boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.25)' : '0 8px 24px rgba(16,185,129,0.06)',
         }}
       >
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
@@ -87,7 +84,7 @@ export function CertificateEngine() {
                 border: isDark ? '1px solid rgba(52,211,153,0.25)' : '1px solid #a7f3d0',
                 color: isDark ? '#6ee7b7' : '#059669'
               }}>
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               ROI Career Accelerator
             </span>
             <h1 className={`text-2xl sm:text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontFamily: 'Outfit, Inter, sans-serif', letterSpacing: '-0.02em' }}>
@@ -98,7 +95,7 @@ export function CertificateEngine() {
             </p>
           </div>
 
-          <div className={`flex items-center gap-2 px-4 py-3 rounded-2xl flex-shrink-0 ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-emerald-200 shadow-sm'}`}>
+          <div className={`flex items-center gap-2 px-4 py-3 rounded-2xl shrink-0 ${isDark ? 'bg-white/5 border border-white/10' : 'bg-white border border-emerald-200 shadow-sm'}`}>
             <Sparkles className="w-5 h-5 text-emerald-500" />
             <div>
               <p className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Smart Gap Scanner</p>
@@ -106,14 +103,11 @@ export function CertificateEngine() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Search Box ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className={`rounded-2xl p-5 sm:p-6 space-y-4 transition-colors duration-300 ${isDark ? 'bg-white/[0.03] border border-white/[0.08]' : 'bg-white border border-slate-200 shadow-sm'}`}
+      <div
+        className={`rounded-2xl p-5 sm:p-6 space-y-4 ${isDark ? 'bg-white/[0.03] border border-white/[0.08]' : 'bg-white border border-slate-200 shadow-sm'}`}
       >
         <div className="flex flex-col md:flex-row gap-3 items-end">
           <div className="flex-1 space-y-1.5 w-full">
@@ -134,7 +128,7 @@ export function CertificateEngine() {
           <button
             onClick={() => getRecommendations()}
             disabled={loading || !targetRole.trim()}
-            className="w-full md:w-auto flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white flex-shrink-0 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
+            className="w-full md:w-auto flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm text-white shrink-0 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-md"
             style={{
               background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
             }}
@@ -151,13 +145,13 @@ export function CertificateEngine() {
             <button
               key={i}
               onClick={() => { setTargetRole(role); getRecommendations(role); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isDark ? 'text-slate-300 bg-white/5 border border-white/10 hover:bg-violet-600/20 hover:text-white' : 'text-slate-700 bg-slate-100 border border-slate-200 hover:bg-violet-50 hover:text-violet-700'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isDark ? 'text-slate-300 bg-white/5 border border-white/10 hover:bg-violet-600/20 hover:text-white' : 'text-slate-700 bg-slate-100 border border-slate-200 hover:bg-violet-50 hover:text-violet-700'}`}
             >
               {role}
             </button>
           ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* ── Results ── */}
       {loading ? (
@@ -167,20 +161,16 @@ export function CertificateEngine() {
         </div>
       ) : recommendations.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <AnimatePresence>
-            {recommendations.map((rec, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.08 }}
-                className={`relative overflow-hidden rounded-2xl p-6 flex flex-col justify-between group transition-all ${isDark ? 'border border-white/10 shadow-2xl' : 'bg-white border border-slate-200 shadow-sm'}`}
-                style={{
-                  background: isDark
-                    ? 'linear-gradient(135deg, rgba(19,24,38,0.85) 0%, rgba(8,11,19,0.92) 100%)'
-                    : '#ffffff',
-                }}
-              >
+          {recommendations.map((rec, i) => (
+            <div
+              key={i}
+              className={`relative overflow-hidden rounded-2xl p-6 flex flex-col justify-between group transition-colors ${isDark ? 'border border-white/10 shadow-xl' : 'bg-white border border-slate-200 shadow-sm'}`}
+              style={{
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(19,24,38,0.92) 0%, rgba(8,11,19,0.96) 100%)'
+                  : '#ffffff',
+              }}
+            >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
@@ -191,7 +181,7 @@ export function CertificateEngine() {
                         {rec.name}
                       </h3>
                     </div>
-                    <span className={cn('px-2.5 py-1 rounded-lg text-[9px] font-bold font-mono flex-shrink-0 uppercase tracking-wider',
+                    <span className={cn('px-2.5 py-1 rounded-lg text-[9px] font-bold font-mono shrink-0 uppercase tracking-wider',
                       rec.impact === 'high' ? (isDark ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-emerald-700 bg-emerald-50 border border-emerald-200') :
                       (isDark ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20' : 'text-amber-700 bg-amber-50 border border-amber-200')
                     )}>
@@ -239,9 +229,8 @@ export function CertificateEngine() {
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
         </div>
       ) : (
         <div className={`py-16 flex flex-col items-center gap-5 rounded-3xl text-center px-6 ${isDark ? 'bg-white/[0.02] border-2 border-dashed border-white/[0.07]' : 'bg-white border-2 border-dashed border-slate-200'}`}>
@@ -264,12 +253,9 @@ export function CertificateEngine() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {trending.map((item, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06 }}
-              className="p-4 rounded-xl space-y-2 transition-colors duration-300"
+              className="p-4 rounded-xl space-y-2 transition-colors duration-200"
               style={{ background: item.color, border: `1px solid ${item.border}` }}
             >
               <div className="flex items-center justify-between">
@@ -277,7 +263,7 @@ export function CertificateEngine() {
                 <span className="text-[9px] font-mono text-slate-500">{item.category}</span>
               </div>
               <p className={`text-xs font-semibold leading-snug ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>

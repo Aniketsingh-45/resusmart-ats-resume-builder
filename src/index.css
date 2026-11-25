@@ -350,13 +350,22 @@ body[data-theme="bright"] .surface-grid {
     height: auto !important;
     overflow: visible !important;
     background: #ffffff !important;
+    transform: none !important;
   }
 
-  /* Show the dedicated unscaled print root */
-  #print-resume-root {
+  /* Reveal dedicated exact-parity print root */
+  #print-resume-root,
+  #print-resume-root.print-offscreen {
     display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
     width: 210mm !important;
-    min-height: 297mm !important;
+    min-height: 296.4mm !important;
     height: auto !important;
     margin: 0 auto !important;
     padding: 0 !important;

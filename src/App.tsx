@@ -12,7 +12,6 @@ import {
   UserPlus, Eye, EyeOff, AlertTriangle, ExternalLink, X,
   Zap, FileText, Award, ArrowRight, CheckCircle2, Star
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { firebaseConfig } from './config/firebase';
 
 const FIREBASE_PROJECT_ID = firebaseConfig.projectId || 'resusmart-ats-app';
@@ -42,21 +41,19 @@ function GoogleFixModal({ onClose }: { onClose: () => void }) {
     { num: 4, text: 'Save, then retry Google sign-in' },
   ];
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
+      style={{ background: 'rgba(6,8,17,0.88)' }}
       onClick={onClose}
     >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+      <div
         onClick={e => e.stopPropagation()}
         className="w-full max-w-md rounded-3xl p-7 space-y-5"
-        style={{ background: 'rgba(13,17,23,0.95)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 30px 80px rgba(0,0,0,0.60)' }}
+        style={{ background: '#0d1117', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 24px 60px rgba(0,0,0,0.65)' }}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.25)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.25)' }}>
               <AlertTriangle className="w-5 h-5 text-amber-400" />
             </div>
             <div>
@@ -75,7 +72,7 @@ function GoogleFixModal({ onClose }: { onClose: () => void }) {
               {currentDomain}
             </code>
             <button onClick={copyDomain}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${copied ? 'bg-emerald-600 text-white' : 'text-violet-300'}`}
+              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${copied ? 'bg-emerald-600 text-white' : 'text-violet-300'}`}
               style={!copied ? { background: 'rgba(124,58,237,0.20)', border: '1px solid rgba(124,58,237,0.30)' } : {}}>
               {copied ? '✓ Copied' : 'Copy'}
             </button>
@@ -84,7 +81,7 @@ function GoogleFixModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-3">
           {steps.map(s => (
             <div key={s.num} className="flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-black shrink-0"
                 style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' }}>{s.num}</div>
               <p className="text-slate-300 text-sm">{s.text}</p>
             </div>
@@ -99,8 +96,8 @@ function GoogleFixModal({ onClose }: { onClose: () => void }) {
         <button onClick={onClose} className="w-full py-2.5 text-slate-500 hover:text-slate-300 text-xs font-semibold transition-colors">
           Use Email / Password instead
         </button>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -111,6 +108,7 @@ function MainApp() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'dashboard' | 'editor' | 'certificates'>('dashboard');
   const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('classic-chronological');
   const [showGoogleFixModal, setShowGoogleFixModal] = useState(false);
 
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
@@ -195,21 +193,26 @@ function MainApp() {
     setProfile({ uid: 'guest-preview', email: 'guest@resusmart.dev', displayName: 'Guest Explorer', subscriptionTier: 'pro', createdAt: new Date().toISOString() });
   };
 
+  const handleLogout = async () => {
+    try { await signOut(auth); } catch {}
+    setUser(null);
+    setProfile(null);
+    setView('dashboard');
+    setActiveResumeId(null);
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center gap-5 relative overflow-hidden" style={{ background: isDark ? '#060811' : '#f8fafc' }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124,58,237,0.20) 0px, transparent 65%)' }} />
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          className="w-16 h-16 rounded-3xl flex items-center justify-center border border-white/15 relative z-10"
-          style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5, #0ea5e9)', boxShadow: '0 0 40px rgba(124,58,237,0.50)' }}
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center border border-white/15 relative z-10"
+          style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5, #0ea5e9)', boxShadow: '0 8px 28px rgba(124,58,237,0.40)' }}
         >
-          <Sparkles className="w-8 h-8 text-white" />
-        </motion.div>
+          <Sparkles className="w-7 h-7 text-white" />
+        </div>
         <div className="flex items-center gap-2.5 relative z-10">
           <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-          <p className={`text-xs font-mono font-semibold tracking-[0.25em] uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Booting ResuSmart 2.0…</p>
+          <p className={`text-xs font-mono font-semibold tracking-[0.25em] uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Loading ResuSmart…</p>
         </div>
       </div>
     );
@@ -240,28 +243,21 @@ function MainApp() {
           <ThemeToggle />
         </div>
 
-        {/* Ambient glows */}
+        {/* Ambient glows (GPU-friendly radial gradients without slow blur filters) */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full opacity-20"
-            style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.5) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full opacity-15"
-            style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.5) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-          <div className="absolute top-1/2 left-0 w-[300px] h-[300px] rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.6) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+          <div className="absolute top-0 left-1/4 w-125 h-125 rounded-full opacity-25"
+            style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.32) 0%, transparent 68%)' }} />
+          <div className="absolute bottom-0 right-1/4 w-105 h-105 rounded-full opacity-20"
+            style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.30) 0%, transparent 68%)' }} />
         </div>
 
         {/* Surface pattern */}
         <div className="absolute inset-0 surface-grid opacity-30 pointer-events-none" />
 
-        <AnimatePresence>
-          {showGoogleFixModal && <GoogleFixModal onClose={() => setShowGoogleFixModal(false)} />}
-        </AnimatePresence>
+        {showGoogleFixModal && <GoogleFixModal onClose={() => setShowGoogleFixModal(false)} />}
 
         {/* ── LEFT: Hero Panel ── */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
+        <div
           className="flex-1 p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative z-10"
         >
           {/* Brand */}
@@ -299,7 +295,7 @@ function MainApp() {
                 resumes.
               </h2>
               <p className={`text-base leading-relaxed max-w-md ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                ResuSmart crafts ATS-compliant resumes with real-time scoring, 10 adaptive multi-page templates, and clickable interactive PDF exports.
+                ResuSmart crafts ATS-compliant resumes with real-time scoring, 12 adaptive 1-page & multi-page templates, and clickable interactive PDF exports.
               </p>
             </div>
 
@@ -307,7 +303,7 @@ function MainApp() {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { icon: Zap, label: 'ATS Score Radar', desc: 'Live keyword metrics', color: '#f59e0b', darkBg: 'rgba(251,191,36,0.10)', lightBg: '#ffffff', darkBorder: 'rgba(251,191,36,0.20)', lightBorder: '#e2e8f0' },
-                { icon: FileText, label: '10 Templates', desc: 'Multi-page PDF scaling', color: '#8b5cf6', darkBg: 'rgba(124,58,237,0.12)', lightBg: '#ffffff', darkBorder: 'rgba(124,58,237,0.22)', lightBorder: '#e2e8f0' },
+                { icon: FileText, label: '12 Templates', desc: '1-Page & multi-page PDF', color: '#8b5cf6', darkBg: 'rgba(124,58,237,0.12)', lightBg: '#ffffff', darkBorder: 'rgba(124,58,237,0.22)', lightBorder: '#e2e8f0' },
                 { icon: Award, label: 'Cert Intelligence', desc: 'ROI gap analysis', color: '#10b981', darkBg: 'rgba(52,211,153,0.10)', lightBg: '#ffffff', darkBorder: 'rgba(52,211,153,0.20)', lightBorder: '#e2e8f0' },
               ].map((feat, i) => (
                 <div key={i} className={`p-4 rounded-2xl space-y-2 transition-all hover:scale-[1.03] cursor-default ${!isDark ? 'shadow-sm' : ''}`}
@@ -344,23 +340,16 @@ function MainApp() {
               <p className={`text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Creator & Engineer</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* ── RIGHT: Auth Panel ── */}
         <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-16 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.1 }}
-            className="w-full max-w-md"
-          >
+          <div className="w-full max-w-md">
             <div className="relative overflow-hidden rounded-3xl p-7 sm:p-9 space-y-6"
               style={{
-                background: isDark ? 'rgba(10,13,22,0.90)' : '#ffffff',
-                backdropFilter: 'blur(30px) saturate(1.5)',
-                WebkitBackdropFilter: 'blur(30px) saturate(1.5)',
+                background: isDark ? '#0b101d' : '#ffffff',
                 border: isDark ? '1px solid rgba(255,255,255,0.09)' : '1px solid #e2e8f0',
-                boxShadow: isDark ? '0 30px 80px rgba(0,0,0,0.60), 0 0 0 1px rgba(124,58,237,0.08)' : '0 20px 60px rgba(99,102,241,0.08), 0 1px 3px rgba(0,0,0,0.05)',
+                boxShadow: isDark ? '0 20px 50px rgba(0,0,0,0.50)' : '0 16px 42px rgba(15,23,42,0.07)',
               }}>
 
               {/* Top gradient line */}
@@ -374,16 +363,9 @@ function MainApp() {
                   <button
                     key={tab}
                     onClick={() => { setAuthTab(tab); setAuthError(''); }}
-                    className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all relative ${authTab === tab ? 'text-white' : isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-600 hover:text-slate-900'}`}
+                    className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors relative ${authTab === tab ? 'text-white shadow-sm' : isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-600 hover:text-slate-900'}`}
+                    style={authTab === tab ? { background: 'linear-gradient(135deg, #7c3aed, #4f46e5)' } : undefined}
                   >
-                    {authTab === tab && (
-                      <motion.div
-                        layoutId="auth-tab-active"
-                        className="absolute inset-0 rounded-xl -z-10"
-                        style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.85), rgba(79,70,229,0.80))', border: '1px solid rgba(124,58,237,0.35)' }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                      />
-                    )}
                     {tab === 'signin' ? 'Sign In' : 'Create Account'}
                   </button>
                 ))}
@@ -393,7 +375,7 @@ function MainApp() {
               <button
                 onClick={handleGoogleLogin}
                 disabled={authLoading}
-                className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 border ${isDark ? 'text-white bg-white/5 hover:bg-white/10 border-white/10' : 'text-slate-800 bg-slate-50 hover:bg-slate-100 border-slate-200 shadow-xs'}`}
+                className={`w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl font-semibold text-sm transition-colors disabled:opacity-50 border ${isDark ? 'text-white bg-white/5 hover:bg-white/10 border-white/10' : 'text-slate-800 bg-slate-50 hover:bg-slate-100 border-slate-200 shadow-xs'}`}
               >
                 <GoogleIcon />
                 Continue with Google
@@ -406,110 +388,109 @@ function MainApp() {
               </div>
 
               {/* Error */}
-              <AnimatePresence>
-                {authError && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-semibold text-rose-500"
-                    style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.20)' }}
-                  >
-                    <AlertTriangle className="w-4 h-4 text-rose-500 flex-shrink-0" />
-                    <span>{authError}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {authError && (
+                <div
+                  className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-semibold text-rose-500"
+                  style={{ background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.20)' }}
+                >
+                  <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span>{authError}</span>
+                </div>
+              )}
 
               {/* Forms */}
-              <AnimatePresence mode="wait">
-                {authTab === 'signin' ? (
-                  <motion.form key="signin" initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.18 }}
-                    onSubmit={handleEmailSignIn} className="space-y-3.5">
-                    <div className="relative">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
-                    </div>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '3rem' }} {...inputFocusHandlers} required />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'}`}>
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <button type="submit" disabled={authLoading}
-                      className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:scale-[1.01]"
-                      style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 20px rgba(124,58,237,0.45)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                      {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                      {authLoading ? 'Authenticating...' : 'Sign In'}
+              {authTab === 'signin' ? (
+                <form key="signin" onSubmit={handleEmailSignIn} className="space-y-3.5">
+                  <div className="relative">
+                    <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
+                  </div>
+                  <div className="relative">
+                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '3rem' }} {...inputFocusHandlers} required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'}`}>
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </motion.form>
-                ) : (
-                  <motion.form key="signup" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }}
-                    onSubmit={handleEmailSignUp} className="space-y-3.5">
-                    <div className="relative">
-                      <UserPlus className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type="text" placeholder="Full name" value={displayName} onChange={e => setDisplayName(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
-                    </div>
-                    <div className="relative">
-                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
-                    </div>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 6 chars)" value={password} onChange={e => setPassword(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '3rem' }} {...inputFocusHandlers} required />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'}`}>
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                      <input type={showPassword ? 'text' : 'password'} placeholder="Confirm password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                        className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
-                    </div>
-                    <button type="submit" disabled={authLoading}
-                      className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:scale-[1.01]"
-                      style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 20px rgba(124,58,237,0.45)', border: '1px solid rgba(255,255,255,0.12)' }}>
-                      {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                      {authLoading ? 'Creating Account...' : 'Create Free Account'}
+                  </div>
+                  <button type="submit" disabled={authLoading}
+                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:brightness-110"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                    {authLoading ? 'Authenticating...' : 'Sign In'}
+                  </button>
+                </form>
+              ) : (
+                <form key="signup" onSubmit={handleEmailSignUp} className="space-y-3.5">
+                  <div className="relative">
+                    <UserPlus className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type="text" placeholder="Full name" value={displayName} onChange={e => setDisplayName(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
+                  </div>
+                  <div className="relative">
+                    <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
+                  </div>
+                  <div className="relative">
+                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type={showPassword ? 'text' : 'password'} placeholder="Password (min 6 chars)" value={password} onChange={e => setPassword(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '3rem' }} {...inputFocusHandlers} required />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 transition-colors ${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'}`}>
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  </motion.form>
-                )}
-              </AnimatePresence>
+                  </div>
+                  <div className="relative">
+                    <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <input type={showPassword ? 'text' : 'password'} placeholder="Confirm password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                      className={inputClass} style={{ ...inputStyle, paddingLeft: '2.75rem', paddingRight: '1rem' }} {...inputFocusHandlers} required />
+                  </div>
+                  <button type="submit" disabled={authLoading}
+                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 transition-colors hover:brightness-110"
+                    style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', boxShadow: '0 4px 18px rgba(124,58,237,0.35)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                    {authLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                    {authLoading ? 'Creating Account...' : 'Create Free Account'}
+                  </button>
+                </form>
+              )}
 
               {/* Guest access */}
               <button
                 onClick={handleGuestLogin}
-                className={`w-full py-3 flex items-center justify-center gap-2 rounded-2xl text-xs font-semibold transition-all border ${isDark ? 'text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/10 border-white/10' : 'text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border-slate-200 shadow-xs'}`}
+                className={`w-full py-3 flex items-center justify-center gap-2 rounded-2xl text-xs font-semibold transition-colors border ${isDark ? 'text-slate-400 hover:text-slate-200 bg-white/5 hover:bg-white/10 border-white/10' : 'text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border-slate-200 shadow-xs'}`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
                 Explore Demo (Instant Guest Access)
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <Layout profile={profile} view={view} setView={setView} onLogout={() => signOut(auth)}>
+    <Layout profile={profile} view={view} setView={setView} onLogout={handleLogout}>
       {view === 'dashboard' && (
         <Dashboard
           onEdit={(id) => { setActiveResumeId(id); setView('editor'); }}
-          onCreateNew={() => { setActiveResumeId(null); setView('editor'); }}
+          onCreateNew={(templateId) => {
+            setSelectedTemplate(templateId || 'classic-chronological');
+            setActiveResumeId(null);
+            setView('editor');
+          }}
         />
       )}
       {view === 'editor' && (
-        <ResumeEditor resumeId={activeResumeId} onBack={() => setView('dashboard')} />
+        <ResumeEditor
+          resumeId={activeResumeId}
+          initialTemplate={selectedTemplate}
+          onBack={() => setView('dashboard')}
+        />
       )}
       {view === 'certificates' && <CertificateEngine />}
     </Layout>

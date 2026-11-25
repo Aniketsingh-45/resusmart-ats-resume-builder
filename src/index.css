@@ -317,7 +317,7 @@ body[data-theme="bright"] .surface-grid {
 
   html, body {
     width: 210mm !important;
-    min-height: 297mm !important;
+    min-height: 296.4mm !important;
     height: auto !important;
     overflow: visible !important;
     background: #ffffff !important;

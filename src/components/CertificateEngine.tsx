@@ -19,7 +19,15 @@ export function CertificateEngine() {
   const [targetRole, setTargetRole] = useState('Senior Full Stack Engineer');
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      try {
+        const raw = localStorage.getItem('resusmart_guest_resumes');
+        const resumes: Resume[] = raw ? JSON.parse(raw) : [];
+        const latest = resumes.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime())[0];
+        if (latest?.content?.skills) setUserSkills(latest.content.skills);
+      } catch {}
+      return;
+    }
     const q = query(collection(db, 'resumes'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const resumes = snapshot.docs.map(doc => doc.data() as Resume);

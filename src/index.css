@@ -400,23 +400,24 @@ body[data-theme="bright"] .surface-grid {
     -webkit-transform: none !important;
   }
 
-  /* Strict single-page constraints when Fit-to-1-Page mode is enabled (takes precedence over default print root) */
+  /* Strict single-page constraints (<297mm prevents Blink sub-pixel blank page 2) */
   body.fit-one-page,
   body.fit-one-page html,
   body.fit-one-page #root,
   body.fit-one-page #print-resume-root,
+  body.fit-one-page #print-resume-root.print-offscreen,
   body.fit-one-page #print-resume-root #resume-preview-container,
   body.fit-one-page #print-resume-root #resume-preview-content {
-    height: 297mm !important;
-    max-height: 297mm !important;
-    min-height: 297mm !important;
+    height: 296.4mm !important;
+    max-height: 296.4mm !important;
+    min-height: 296.4mm !important;
     overflow: hidden !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     page-break-before: avoid !important;
   }
 
-  /* 2-Column Project Grid in Print Mode - Strict Flexbox Geometry */
+  /* 2-Column Project Grid in Print Mode - Strict Flexbox Geometry without cutting text */
   .resume-projects-grid {
     display: flex !important;
     flex-direction: row !important;

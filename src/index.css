@@ -440,27 +440,36 @@ body[data-theme="bright"] .surface-grid {
     width: calc(50% - 5px) !important;
     min-width: 0 !important;
     box-sizing: border-box !important;
-    background-color: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
     border-radius: 6px !important;
     padding: 6px 8px !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    overflow: hidden !important;
   }
 
   .resume-project-card h3 {
     min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
   }
 
-  .resume-project-card p {
+  .resume-project-card p,
+  .resume-project-card div {
     overflow-wrap: break-word !important;
     word-break: normal !important;
+  }
+
+  /* Sidebar stretch in multi-page split templates */
+  .resume-flex-shell {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Page break & fragmentation rules for clean multi-page resumes */
